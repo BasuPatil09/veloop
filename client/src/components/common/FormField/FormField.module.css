@@ -1,0 +1,44 @@
+.group {
+  margin-bottom: 18px;
+}
+
+.label {
+  display: block;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--veloop-ink);
+  margin-bottom: 6px;
+}
+
+.input {
+  width: 100%;
+  padding: 11px 14px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--veloop-border-strong);
+  background: #fff;
+  font-size: 0.95rem;
+  color: var(--veloop-text);
+  transition: border-color var(--duration-fast) var(--ease-standard), box-shadow var(--duration-fast) var(--ease-standard);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--veloop-primary);
+  box-shadow: 0 0 0 3px var(--veloop-primary-tint);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--veloop-danger);
+}
+
+.errorText {
+  margin-top: 6px;
+  font-size: 0.82rem;
+  color: var(--veloop-danger);
+}
+
+.hint {
+  margin-top: 6px;
+  font-size: 0.8rem;
+  color: var(--veloop-text-muted);
+}

@@ -1,0 +1,46 @@
+/*
+  VELOOP design tokens.
+  Palette: deep emerald (trust/fintech) + warm ivory paper + a restrained brass
+  accent reserved for reward moments only (never used for regular UI chrome —
+  that's what keeps this from tipping into "casino gold").
+  Type: Fraunces (display, used sparingly) + Inter (body/UI) + IBM Plex Mono
+  (currency figures, countdown, ticket-style numbers — a receipt/voucher feel).
+*/
+
+:root {
+  /* Color */
+  --veloop-ink: #101916;
+  --veloop-ink-soft: #1c2622;
+  --veloop-surface: #faf9f4;
+  --veloop-surface-card: #ffffff;
+  --veloop-primary: #145c52;
+  --veloop-primary-dark: #0c3b34;
+  --veloop-primary-tint: #e6efec;
+  --veloop-accent-gold: #b8892b;
+  --veloop-accent-gold-tint: #f6ecd8;
+  --veloop-border: #e3dfd2;
+  --veloop-border-strong: #cfc9b8;
+  --veloop-text: #171f1c;
+  --veloop-text-muted: #5b6660;
+  --veloop-danger: #b3432b;
+  --veloop-danger-tint: #f7e6e0;
+  --veloop-success: #2f6f4e;
+  --veloop-success-tint: #e6f0e9;
+
+  /* Type */
+  --font-display: 'Fraunces', 'Georgia', serif;
+  --font-body: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'IBM Plex Mono', 'SFMono-Regular', Menlo, monospace;
+
+  /* Radius + shadow — soft, not sharp; premium, not playful */
+  --radius-sm: 8px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --shadow-card: 0 1px 2px rgba(16, 25, 22, 0.04), 0 8px 24px rgba(16, 25, 22, 0.06);
+  --shadow-card-hover: 0 4px 10px rgba(16, 25, 22, 0.06), 0 16px 36px rgba(16, 25, 22, 0.1);
+
+  /* Motion — subtle, never bouncy/casino-like */
+  --ease-standard: cubic-bezier(0.2, 0.7, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-base: 240ms;
+}

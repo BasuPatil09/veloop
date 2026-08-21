@@ -1,0 +1,25 @@
+.alert {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 12px 14px;
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+  line-height: 1.5;
+  margin-bottom: 18px;
+}
+
+.error {
+  background: var(--veloop-danger-tint);
+  color: var(--veloop-danger);
+}
+
+.success {
+  background: var(--veloop-success-tint);
+  color: var(--veloop-success);
+}
+
+.icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
