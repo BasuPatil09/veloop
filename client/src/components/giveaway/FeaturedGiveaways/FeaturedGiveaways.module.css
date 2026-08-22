@@ -1,0 +1,88 @@
+.section {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 24px 64px;
+  scroll-margin-top: 80px;
+}
+
+.sectionHead {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--veloop-primary);
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-top: 8px;
+}
+
+.campaign {
+  margin-bottom: 40px;
+}
+
+.campaign:last-child {
+  margin-bottom: 0;
+}
+
+.campaignTitle {
+  font-size: 1.1rem;
+  margin-bottom: 16px;
+  padding-left: 2px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.skeletonCard {
+  height: 320px;
+  border-radius: var(--radius-lg);
+  background: var(--veloop-surface-card);
+  border: 1px solid var(--veloop-border);
+  position: relative;
+  overflow: hidden;
+}
+
+.skeletonCard::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, transparent, rgba(0, 0, 0, 0.04), transparent);
+  animation: shimmer 1.6s infinite;
+}
+
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeletonCard::after {
+    animation: none;
+  }
+}

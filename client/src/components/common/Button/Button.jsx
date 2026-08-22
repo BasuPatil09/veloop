@@ -5,11 +5,11 @@ import styles from './Button.module.css';
  * everywhere a request is in flight (auth forms now; join/claim in later phases)
  * so duplicate submissions are structurally prevented, not just discouraged.
  */
-export function Button({ variant = 'primary', isLoading = false, loadingText, children, disabled, ...props }) {
+export function Button({ variant = 'primary', isLoading = false, loadingText, fullWidth = true, children, disabled, ...props }) {
   return (
     <button
       type="button"
-      className={`${styles.button} ${styles[variant]}`}
+      className={`${styles.button} ${styles[variant]} ${fullWidth ? '' : styles.inline}`}
       disabled={disabled || isLoading}
       {...props}
     >

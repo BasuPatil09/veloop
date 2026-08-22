@@ -10,7 +10,9 @@ const { notFoundHandler, errorHandler } = require('./middleware/errorMiddleware'
 const { ok } = require('./utils/apiResponse');
 
 const authRoutes = require('./routes/authRoutes');
-// Phase 2+: giveawayRoutes, participationRoutes, winnerRoutes, claimRoutes, adminRoutes
+const giveawayRoutes = require('./routes/giveawayRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+// Phase 3+: participationRoutes, winnerRoutes, claimRoutes
 
 const app = express();
 
@@ -29,7 +31,9 @@ app.use(generalLimiter);
 app.get('/api/health', (req, res) => ok(res, { status: 'ok', env: env.nodeEnv }));
 
 app.use('/api/auth', authRoutes);
-// Phase 2+: app.use('/api/giveaways', giveawayRoutes); etc.
+app.use('/api/giveaways', giveawayRoutes);
+app.use('/api/admin', adminRoutes);
+// Phase 3+: app.use('/api/giveaways', participationRoutes); etc.
 
 app.use(notFoundHandler);
 app.use(errorHandler);

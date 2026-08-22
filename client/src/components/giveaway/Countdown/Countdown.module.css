@@ -1,0 +1,49 @@
+.countdown {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-mono);
+}
+
+.segment {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background: var(--veloop-ink);
+  color: #fff;
+  border-radius: var(--radius-sm);
+  padding: 6px 9px;
+  min-width: 40px;
+}
+
+.value {
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.label {
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.6);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.colon {
+  color: var(--veloop-text-muted);
+  font-weight: 600;
+}
+
+/* Compact variant for use inside a PrizeCard */
+.sm .segment {
+  padding: 4px 6px;
+  min-width: 30px;
+}
+
+.sm .value {
+  font-size: 0.85rem;
+}
+
+.sm .label {
+  font-size: 0.55rem;
+}

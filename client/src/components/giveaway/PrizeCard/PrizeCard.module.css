@@ -1,0 +1,165 @@
+.card {
+  display: flex;
+  flex-direction: column;
+  background: var(--veloop-surface-card);
+  border: 1px solid var(--veloop-border);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-card);
+  transition: box-shadow var(--duration-base) var(--ease-standard), border-color var(--duration-base) var(--ease-standard),
+    transform var(--duration-base) var(--ease-standard);
+  height: 100%;
+}
+
+.card:hover {
+  box-shadow: var(--shadow-card-hover);
+  border-color: var(--veloop-border-strong);
+  transform: translateY(-2px);
+}
+
+.imageWrap {
+  position: relative;
+  aspect-ratio: 16 / 11;
+  background: linear-gradient(155deg, var(--veloop-primary-tint) 0%, var(--veloop-accent-gold-tint) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.imageFallbackIcon {
+  color: var(--veloop-primary);
+  opacity: 0.5;
+}
+
+.position {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  background: var(--veloop-ink);
+  color: #fff;
+  font-size: 0.72rem;
+  font-weight: 600;
+  padding: 5px 10px;
+  border-radius: 999px;
+}
+
+.statusBadge {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.dotLive {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--veloop-success);
+}
+
+.dotUpcoming {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--veloop-accent-gold);
+}
+
+.body {
+  padding: 18px 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+
+.name {
+  font-size: 1.08rem;
+}
+
+.description {
+  font-size: 0.85rem;
+  color: var(--veloop-text-muted);
+  line-height: 1.5;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.metaRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 0.78rem;
+  color: var(--veloop-text-muted);
+  margin-top: 2px;
+}
+
+.winnersTag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.entrySection {
+  margin-top: auto;
+  padding-top: 14px;
+  border-top: 1px solid var(--veloop-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.entryFee {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.entryFeeLabel {
+  font-size: 0.7rem;
+  color: var(--veloop-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entryFeeValue {
+  font-family: var(--font-mono);
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--veloop-ink);
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--veloop-primary);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius-sm);
+  padding: 10px 16px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+  transition: background var(--duration-fast) var(--ease-standard);
+}
+
+.cta:hover {
+  background: var(--veloop-primary-dark);
+}
+
+.countdownRow {
+  margin-top: 2px;
+}

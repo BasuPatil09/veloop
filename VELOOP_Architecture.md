@@ -20,6 +20,7 @@ The spec intentionally leaves some choices to the implementer. Decisions made he
 | Deployment | Frontend → Vercel · Backend → Render/Railway · DB → managed MySQL host | Vercel is spec-recommended for frontend; DB choice updated below (Database row) |
 | Timeline | 20 Aug – 12 Sep 2026 (23 days) | Matches actual assignment dates, not a generic estimate |
 | **Database** *(updated)* | **MySQL + Sequelize**, not MongoDB + Mongoose | **Explicit deviation from the spec**, made knowingly: the assignment's tech stack (§2, §61 of the backend doc) names MongoDB/Mongoose specifically, and a few requirements are written around Mongo's mechanics (compound unique index, session-based transactions, embedded prize arrays). Switching to MySQL means: relational tables instead of embedded documents, `sequelize.transaction()` instead of Mongoose sessions, and a `UNIQUE KEY(userId, giveawayId)` instead of a Mongo compound index — the same guarantees, different engine. **If this is submitted against the original spec, flag this substitution explicitly in the README so it isn't mistaken for an oversight.** |
+| **Entry scope** *(new, Phase 2)* | **Per-prize**, not per-campaign | The spec's routing examples name individual prizes (`/giveaway/iphone-15-pro`, `/giveaway/apple-watch`), and §20 describes one giveaway *event* containing several prizes with independent winner counts and independent entry currencies/fees. Read literally, that means a user must be able to enter for the iPhone **and separately** for the AirPods within the same campaign — which a `UNIQUE(userId, giveawayId)` constraint alone would block. Resolution: `Prize` gets its own `slug` (what `/giveaway/:slug` actually resolves against) and its own entry fee/currency/winnerCount, and duplicate-entry protection is scoped to `(userId, prizeId)` rather than `(userId, giveawayId)` — the giveaway `Giveaway` row remains the shared campaign container (one shared countdown, one set of rules) that its prizes belong to. |
 
 ---
 
@@ -340,6 +341,7 @@ All responses use a consistent envelope: `{ success: boolean, data?: any, error?
 {
   id:               UUID, primaryKey
   giveawayId:       UUID, FK → Giveaways.id, index
+  slug:             STRING, unique: true          // what /giveaway/:slug actually resolves against
   name:             STRING                    // "iPhone 15 Pro"
   position:         STRING                    // "1st Prize"
   image:            STRING
@@ -350,6 +352,7 @@ All responses use a consistent envelope: `{ success: boolean, data?: any, error?
   entryAmount:      INTEGER                   // e.g. 250
   winnerCount:      INTEGER                   // e.g. 1
   value:            STRING                    // optional display-only, e.g. "₹2,000"
+  sortOrder:        INTEGER                   // display order within the parent giveaway
 }
 
 // GiveawayParticipations — the core anti-duplicate guard

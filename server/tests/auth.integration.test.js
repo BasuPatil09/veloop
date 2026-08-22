@@ -18,7 +18,9 @@ beforeAll(async () => {
 });
 
 afterEach(async () => {
-  await User.destroy({ where: {}, truncate: true });
+  // Plain DELETE, not TRUNCATE — MySQL disallows TRUNCATE on any table referenced
+  // by a foreign key (giveaways.createdById -> users.id), regardless of row count.
+  await User.destroy({ where: {} });
 });
 
 afterAll(async () => {
