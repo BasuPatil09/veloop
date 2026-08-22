@@ -1,9 +1,11 @@
 const dotenv = require('dotenv');
 
-dotenv.config();
+dotenv.config({ quiet: true });
 
 const required = [
-  'MONGO_URI',
+  'DB_HOST',
+  'DB_NAME',
+  'DB_USER',
   'JWT_SECRET',
   'REFRESH_SECRET',
   'CLIENT_URL',
@@ -23,7 +25,13 @@ function assertRequiredEnv() {
 const env = {
   port: process.env.PORT || 5000,
   nodeEnv: process.env.NODE_ENV || 'development',
-  mongoUri: process.env.MONGO_URI,
+  db: {
+    host: process.env.DB_HOST || 'localhost',
+    port: Number(process.env.DB_PORT) || 3306,
+    name: process.env.DB_NAME,
+    user: process.env.DB_USER,
+    password: process.env.DB_PASSWORD || '',
+  },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',
   refreshSecret: process.env.REFRESH_SECRET,

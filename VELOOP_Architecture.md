@@ -17,8 +17,9 @@ The spec intentionally leaves some choices to the implementer. Decisions made he
 | Previous winners | **Not** a separate collection — same `GiveawayWinner` model, filtered by `giveaway.status` | Per spec §64: "winners remain associated with their original giveaway," avoids data duplication/migration bugs |
 | Device fingerprinting | Lightweight hash of `IP + User-Agent + client-generated UUID (httpOnly cookie)` — a signal, not a lock | Spec explicitly says fingerprinting is "abuse-prevention, not identity" (§24) |
 | Styling | Bootstrap (grid/utilities) + CSS Modules per component (no `react-bootstrap` dependency) | Spec requires both Bootstrap *and* CSS Modules; plain Bootstrap CSS + modules avoids fighting two component libraries |
-| Deployment | Frontend → Vercel · Backend → Render/Railway · DB → MongoDB Atlas | Vercel is spec-recommended for frontend; backend needs a Node host since Vercel serverless doesn't suit long-lived Mongo transactions well |
+| Deployment | Frontend → Vercel · Backend → Render/Railway · DB → managed MySQL host | Vercel is spec-recommended for frontend; DB choice updated below (Database row) |
 | Timeline | 20 Aug – 12 Sep 2026 (23 days) | Matches actual assignment dates, not a generic estimate |
+| **Database** *(updated)* | **MySQL + Sequelize**, not MongoDB + Mongoose | **Explicit deviation from the spec**, made knowingly: the assignment's tech stack (§2, §61 of the backend doc) names MongoDB/Mongoose specifically, and a few requirements are written around Mongo's mechanics (compound unique index, session-based transactions, embedded prize arrays). Switching to MySQL means: relational tables instead of embedded documents, `sequelize.transaction()` instead of Mongoose sessions, and a `UNIQUE KEY(userId, giveawayId)` instead of a Mongo compound index — the same guarantees, different engine. **If this is submitted against the original spec, flag this substitution explicitly in the README so it isn't mistaken for an oversight.** |
 
 ---
 
@@ -44,7 +45,7 @@ The spec intentionally leaves some choices to the implementer. Decisions made he
 │  giveawayService · participationService · balanceService ·         │
 │  winnerService · claimService · fraudService · auditService        │
 └───────────────────────────┬─────────────────────────────────────┘
-                             │  Mongoose sessions/transactions
+                             │  Sequelize transactions (sequelize.transaction())
 ┌───────────────────────────▼─────────────────────────────────────┐
 │  MODELS — User, Giveaway, Prize, GiveawayParticipation,             │
 │  GiveawayEntryTransaction, GiveawayWinner, PrizeClaim,              │
@@ -52,8 +53,8 @@ The spec intentionally leaves some choices to the implementer. Decisions made he
 └───────────────────────────┬─────────────────────────────────────┘
                              │
 ┌───────────────────────────▼─────────────────────────────────────┐
-│                    MongoDB Atlas (replica set — required           │
-│                    for multi-document transactions)                │
+│              MySQL 8 / MariaDB (InnoDB — transactional,            │
+│              foreign keys + unique constraints enforced at the DB) │
 └──────────────────────────────────────────────────────────────────┘
 
 Side process: node-cron job (every 60s) recomputes UPCOMING→ACTIVE→ENDED
@@ -292,147 +293,158 @@ All responses use a consistent envelope: `{ success: boolean, data?: any, error?
 
 ---
 
-## E. MongoDB Schema Design
+## E. MySQL Schema Design (Sequelize)
+
+> Relational redesign of the same guarantees the original Mongo schema was built for:
+> primary keys are UUID strings (`CHAR(36)`, matching the ObjectId-string shape the
+> frontend already expects), embedded arrays become join/child tables, and the
+> `(user, giveaway)` compound uniqueness becomes a genuine MySQL `UNIQUE KEY`.
 
 ```js
-// User
+// Users
 {
-  name: String,
-  email: { type: String, unique: true, required: true, lowercase: true },
-  passwordHash: String,
-  role: { type: String, enum: ['user', 'admin'], default: 'user' },
-  balances: {
-    ve: { type: Number, default: 0, min: 0 },
-    sve: { type: Number, default: 0, min: 0 },
-    token: { type: Number, default: 0, min: 0 }
-  },
-  refreshTokenHash: String,
-  isVerified: { type: Boolean, default: false },
-  timestamps: true
+  id:               UUID, primaryKey, default UUIDV4
+  name:             STRING(100), allowNull: false
+  email:            STRING, allowNull: false, unique: true   // lower-cased on write
+  passwordHash:     STRING, allowNull: false                  // excluded by defaultScope
+  role:             ENUM('user','admin'), default 'user'
+  balanceVe:        INTEGER, default 0, CHECK(balanceVe >= 0)
+  balanceSve:       INTEGER, default 0, CHECK(balanceSve >= 0)
+  balanceToken:     INTEGER, default 0, CHECK(balanceToken >= 0)
+  refreshTokenHash: STRING, allowNull: true                   // excluded by defaultScope
+  isVerified:       BOOLEAN, default false
+  createdAt/updatedAt (Sequelize timestamps)
+}
+// INDEX: UNIQUE(email)
+
+// Giveaways
+{
+  id:               UUID, primaryKey
+  title:            STRING
+  slug:             STRING, unique: true
+  description:      TEXT
+  status:           ENUM('upcoming','active','ended','archived'), index
+  startAt:          DATE, index
+  endAt:            DATE, index
+  bannerImage:      STRING
+  allowMultipleEntries: BOOLEAN, default false
+  createdById:      UUID, FK → Users.id
+  createdAt/updatedAt
+}
+// eligibility[] and rules[] (were plain string arrays in Mongo) become child tables —
+// GiveawayEligibilityRules(id, giveawayId FK, kind ENUM('eligibility','rule'), text, sortOrder)
+// This also makes them independently orderable/editable from the admin UI later.
+// INDEX: (status, startAt, endAt)
+
+// Prizes
+{
+  id:               UUID, primaryKey
+  giveawayId:       UUID, FK → Giveaways.id, index
+  name:             STRING                    // "iPhone 15 Pro"
+  position:         STRING                    // "1st Prize"
+  image:            STRING
+  description:      TEXT
+  type:             ENUM('PHYSICAL','GIFT_CARD','DIGITAL')
+  claimType:        ENUM('PHYSICAL_ADDRESS','EMAIL')
+  entryCurrency:    ENUM('VE','SVE','TOKEN')
+  entryAmount:      INTEGER                   // e.g. 250
+  winnerCount:      INTEGER                   // e.g. 1
+  value:            STRING                    // optional display-only, e.g. "₹2,000"
 }
 
-// Giveaway
+// GiveawayParticipations — the core anti-duplicate guard
 {
-  title: String,
-  slug: { type: String, unique: true, index: true },
-  description: String,
-  status: { type: String, enum: ['upcoming','active','ended','archived'], index: true },
-  startAt: { type: Date, index: true },
-  endAt: { type: Date, index: true },
-  bannerImage: String,
-  eligibility: [String],
-  rules: [String],
-  participationSettings: {
-    allowMultipleEntries: { type: Boolean, default: false }
-  },
-  prizes: [{ type: ObjectId, ref: 'Prize' }],
-  createdBy: { type: ObjectId, ref: 'User' },
-  timestamps: true
+  id:               UUID, primaryKey
+  userId:           UUID, FK → Users.id, index
+  giveawayId:       UUID, FK → Giveaways.id, index
+  prizeId:          UUID, FK → Prizes.id
+  entryCurrency:    ENUM('VE','SVE','TOKEN')
+  entryAmount:       INTEGER
+  deviceHash:       STRING
+  ipHash:            STRING
+  status:            ENUM('SUCCESS','FAILED','BLOCKED')
+  transactionId:     UUID, FK → GiveawayEntryTransactions.id
+  joinedAt:          DATE
 }
-// index: { status: 1, startAt: 1, endAt: 1 }
+// UNIQUE KEY(userId, giveawayId) — enforced at the DB (InnoDB), the MySQL equivalent
+// of the Mongo compound unique index; survives simultaneous requests, not just app logic.
 
-// Prize
+// GiveawayEntryTransactions
 {
-  giveaway: { type: ObjectId, ref: 'Giveaway', index: true },
-  name: String,                 // "iPhone 15 Pro"
-  position: String,             // "1st Prize"
-  image: String,
-  description: String,
-  type: { type: String, enum: ['PHYSICAL','GIFT_CARD','DIGITAL'] },
-  claimType: { type: String, enum: ['PHYSICAL_ADDRESS','EMAIL'] },
-  entryCurrency: { type: String, enum: ['VE','SVE','TOKEN'] },
-  entryAmount: Number,          // e.g. 250
-  winnerCount: Number,          // e.g. 1
-  value: String                 // optional, e.g. "₹2,000" — display only
+  id:                UUID, primaryKey
+  userId:            UUID, FK → Users.id
+  giveawayId:        UUID, FK → Giveaways.id
+  prizeId:           UUID, FK → Prizes.id
+  currency:          ENUM('VE','SVE','TOKEN')
+  amount:             INTEGER
+  type:               ENUM('ENTRY_FEE','REVERSAL')
+  status:             ENUM('PENDING','SUCCESS','FAILED','REVERSED')
+  balanceBefore:      INTEGER
+  balanceAfter:        INTEGER
+  idempotencyKey:      STRING, unique: true, allowNull: true
+  createdAt/updatedAt
 }
 
-// GiveawayParticipation — the core anti-duplicate guard
+// GiveawayWinners
 {
-  user: { type: ObjectId, ref: 'User', index: true },
-  giveaway: { type: ObjectId, ref: 'Giveaway', index: true },
-  prize: { type: ObjectId, ref: 'Prize' },
-  entryCurrency: String,
-  entryAmount: Number,
-  deviceHash: String,
-  ipHash: String,
-  status: { type: String, enum: ['SUCCESS','FAILED','BLOCKED'] },
-  transaction: { type: ObjectId, ref: 'GiveawayEntryTransaction' },
-  joinedAt: Date
+  id:                 UUID, primaryKey
+  giveawayId:         UUID, FK → Giveaways.id, index
+  prizeId:            UUID, FK → Prizes.id
+  userId:             UUID, FK → Users.id
+  selectionMethod:    ENUM('MANUAL','RANDOM')
+  selectedAt:         DATE
+  status:             ENUM('PENDING_CLAIM','CLAIMED','EXPIRED')
+  claimDeadline:      DATE
 }
-// UNIQUE COMPOUND INDEX — enforced at the DB, not just app logic:
-// index({ user: 1, giveaway: 1 }, { unique: true })
+// UNIQUE KEY(prizeId, userId) — prevents a duplicate winner record for the same prize
 
-// GiveawayEntryTransaction
+// PrizeClaims — sensitive, never exposed on public endpoints
 {
-  user: { type: ObjectId, ref: 'User' },
-  giveaway: { type: ObjectId, ref: 'Giveaway' },
-  prize: { type: ObjectId, ref: 'Prize' },
-  currency: String,
-  amount: Number,
-  type: { type: String, enum: ['ENTRY_FEE','REVERSAL'] },
-  status: { type: String, enum: ['PENDING','SUCCESS','FAILED','REVERSED'] },
-  balanceBefore: Number,
-  balanceAfter: Number,
-  idempotencyKey: { type: String, unique: true, sparse: true },
-  timestamps: true
+  id:                 UUID, primaryKey
+  winnerId:           UUID, FK → GiveawayWinners.id, unique: true
+  userId:             UUID, FK → Users.id
+  prizeId:            UUID, FK → Prizes.id
+  claimType:          ENUM('PHYSICAL','EMAIL')
+  fullName, phone, address, city, state, pin, email:  STRING, allowNull: true
+  status:             ENUM('NOT_SUBMITTED','SUBMITTED','PROCESSING','COMPLETED','EXPIRED')
+  submittedAt:        DATE
+  processedAt:        DATE
 }
+// submittedData was a nested object in Mongo; MySQL doesn't need a JSON column here since
+// the field set is fixed and known (physical vs. email) — plain columns are simpler to
+// exclude from serializers and to index/audit than unpacking a JSON blob.
 
-// GiveawayWinner
+// FraudEvents
 {
-  giveaway: { type: ObjectId, ref: 'Giveaway', index: true },
-  prize: { type: ObjectId, ref: 'Prize' },
-  user: { type: ObjectId, ref: 'User' },
-  selectionMethod: { type: String, enum: ['MANUAL','RANDOM'] },
-  selectedAt: Date,
-  status: { type: String, enum: ['PENDING_CLAIM','CLAIMED','EXPIRED'] },
-  claimDeadline: Date
-}
-// index({ prize: 1, user: 1 }, { unique: true }) — prevents duplicate winner record
-
-// PrizeClaim — sensitive, never exposed on public endpoints
-{
-  winner: { type: ObjectId, ref: 'GiveawayWinner', unique: true },
-  user: { type: ObjectId, ref: 'User' },
-  prize: { type: ObjectId, ref: 'Prize' },
-  claimType: { type: String, enum: ['PHYSICAL','EMAIL'] },
-  submittedData: {
-    name: String, phone: String, address: String, city: String, state: String, pin: String,
-    email: String
-  },
-  status: { type: String, enum: ['NOT_SUBMITTED','SUBMITTED','PROCESSING','COMPLETED','EXPIRED'] },
-  submittedAt: Date,
-  processedAt: Date
+  id:                 UUID, primaryKey
+  userId:             UUID, FK → Users.id
+  giveawayId:         UUID, FK → Giveaways.id
+  deviceHash:         STRING
+  ipHash:             STRING
+  riskScore:          INTEGER          // 0–100
+  reason:             STRING
+  signals:            JSON             // array of strings — MySQL JSON column, fine for a read-mostly log
+  action:             ENUM('ALLOWED','FLAGGED','BLOCKED')
+  createdAt:          DATE
 }
 
-// FraudEvent
+// AuditLogs
 {
-  user: { type: ObjectId, ref: 'User' },
-  giveaway: { type: ObjectId, ref: 'Giveaway' },
-  deviceHash: String,
-  ipHash: String,
-  riskScore: Number,           // 0–100
-  reason: String,
-  signals: [String],
-  action: { type: String, enum: ['ALLOWED','FLAGGED','BLOCKED'] },
-  createdAt: Date
-}
-
-// AuditLog
-{
-  user: { type: ObjectId, ref: 'User' },
-  action: { type: String, enum: [
-    'JOIN_GIVEAWAY','ENTRY_FEE_DEDUCTED','JOIN_REJECTED','DUPLICATE_ATTEMPT',
-    'FRAUD_FLAGGED','CLAIM_SUBMITTED','WINNER_SELECTED'
-  ]},
-  giveaway: { type: ObjectId, ref: 'Giveaway' },
-  amount: Number,
-  currency: String,
-  result: String,
-  requestId: String,
-  meta: Object,
-  createdAt: Date
+  id:                 UUID, primaryKey
+  userId:             UUID, FK → Users.id
+  action:             ENUM('JOIN_GIVEAWAY','ENTRY_FEE_DEDUCTED','JOIN_REJECTED','DUPLICATE_ATTEMPT',
+                             'FRAUD_FLAGGED','CLAIM_SUBMITTED','WINNER_SELECTED')
+  giveawayId:         UUID, FK → Giveaways.id
+  amount:             INTEGER
+  currency:           STRING
+  result:             STRING
+  requestId:          STRING
+  meta:               JSON             // free-form context — fine for a write-once audit trail
+  createdAt:          DATE
 }
 ```
+
+**Transactions:** every place the original plan used a Mongoose session (the join flow's deduct-balance + create-participation + create-transaction sequence) now uses `sequelize.transaction(async (t) => { ... })`, with each write passed `{ transaction: t }`. InnoDB's row-level locking (`SELECT ... FOR UPDATE` on the user's balance row) replaces Mongo's document-level atomicity for the balance check-then-deduct step.
 
 ---
 
@@ -503,7 +515,7 @@ Click "Join Giveaway – 250 VEs" on /giveaway/:slug
   → authenticated → GET my-status (already joined? show "You're Already Participating")
   → ConfirmJoinModal shows: prize, entry fee, current balance (from /auth/me), balance after
   → "Confirm & Join" → POST /giveaways/:id/join  { idempotencyKey }
-      Backend, inside a Mongoose transaction:
+      Backend, inside a Sequelize transaction (sequelize.transaction()):
         1. authenticate (JWT)                     → 401 LOGIN_REQUIRED
         2. validate request shape                 → 400
         3. rate-limit check                       → 429 RATE_LIMITED
@@ -550,11 +562,11 @@ User visits their giveaway/profile → GET /my-claim
 | Input validation | `express-validator`/Joi schemas on every route body/params before it reaches a controller |
 | Rate limiting | `express-rate-limit` on `/login`, `/join`, `/claim` — friendly `RATE_LIMITED` response, not a stack trace |
 | Idempotency | Client sends a UUID `idempotencyKey`; unique index on `EntryTransaction.idempotencyKey` — repeated clicks/retries return the original result instead of double-charging |
-| Atomicity | Mongoose session/transaction wraps balance deduction + participation + transaction record — all-or-nothing |
-| Duplicate protection | Compound **unique DB index** `(user, giveaway)` on `GiveawayParticipation` — survives simultaneous requests, not just an `if (alreadyJoined)` check |
+| Atomicity | `sequelize.transaction()` wraps balance deduction + participation + transaction record — all-or-nothing, with row locking (`SELECT ... FOR UPDATE`) on the balance check |
+| Duplicate protection | **`UNIQUE KEY(userId, giveawayId)`** on `GiveawayParticipations`, enforced by InnoDB — survives simultaneous requests, not just an `if (alreadyJoined)` check |
 | Fraud scoring | `fraudService` computes a 0–100 `riskScore` from device-hash reuse, IP reuse, account age, and request velocity; LOW/MEDIUM allowed (medium flagged), HIGH/CRITICAL blocked and logged to `FraudEvent` — no single signal is treated as definitive proof (spec §21) |
 | Audit trail | Every balance-affecting or winner/claim action writes to `AuditLog`; failed/rejected attempts are logged too (`JOIN_REJECTED`, `DUPLICATE_ATTEMPT`) |
-| Data privacy | `PrizeClaim.submittedData` is excluded from every public/user-facing serializer; winner lists only ever return `maskUserId(user)` (`VE****42`) + prize + date |
+| Data privacy | `PrizeClaim`'s submitted contact fields are excluded from every public/user-facing serializer; winner lists only ever return `maskUserId(user)` (`VE****42`) + prize + date |
 | Reversal, not deletion | If a business reversal is ever needed, a compensating `REVERSAL` transaction is written — the original record is never deleted, preserving the audit trail (spec §68) |
 
 ---
@@ -598,7 +610,7 @@ devDependencies:
 
 ```
 dependencies:
-  express, mongoose, jsonwebtoken, bcryptjs, cors, helmet,
+  express, sequelize, mysql2, jsonwebtoken, bcryptjs, cors, helmet,
   express-rate-limit, express-validator, dotenv, morgan,
   cookie-parser, uuid, node-cron
 
@@ -616,7 +628,11 @@ devDependencies:
 |---|---|
 | `PORT` | API port (e.g. 5000) |
 | `NODE_ENV` | `development` \| `production` |
-| `MONGO_URI` | Atlas connection string |
+| `DB_HOST` | MySQL host, e.g. `localhost` or an RDS/PlanetScale hostname |
+| `DB_PORT` | MySQL port, default `3306` |
+| `DB_NAME` | Database name, e.g. `veloop_dev` |
+| `DB_USER` | MySQL user |
+| `DB_PASSWORD` | MySQL password |
 | `JWT_SECRET` | Access-token signing secret |
 | `JWT_EXPIRES_IN` | e.g. `15m` |
 | `REFRESH_SECRET` | Refresh-token signing/hash secret |

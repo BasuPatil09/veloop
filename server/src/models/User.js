@@ -1,53 +1,89 @@
-const mongoose = require('mongoose');
+const { DataTypes, Model } = require('sequelize');
+const { sequelize } = require('../config/db');
 
-const { Schema } = mongoose;
+class User extends Model {}
 
-const userSchema = new Schema(
+User.init(
   {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
     name: {
-      type: String,
-      required: [true, 'Name is required'],
-      trim: true,
-      maxlength: 100,
+      type: DataTypes.STRING(100),
+      allowNull: false,
+      validate: { notEmpty: { msg: 'Name is required' } },
     },
     email: {
-      type: String,
-      required: [true, 'Email is required'],
-      unique: true,
-      lowercase: true,
-      trim: true,
-      index: true,
+      type: DataTypes.STRING,
+      allowNull: false,
+      unique: { msg: 'An account with this email already exists.' },
+      validate: { isEmail: { msg: 'Enter a valid email address' } },
+      set(value) {
+        // Mirrors the old Mongoose `lowercase: true` schema option.
+        this.setDataValue('email', String(value).toLowerCase().trim());
+      },
     },
     passwordHash: {
-      type: String,
-      required: true,
-      select: false, // never returned by default — must opt in with .select('+passwordHash')
+      type: DataTypes.STRING,
+      allowNull: false,
     },
     role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
+      type: DataTypes.ENUM('user', 'admin'),
+      allowNull: false,
+      defaultValue: 'user',
     },
     // Authoritative balances. The frontend only ever displays these; it never
     // computes or sends them as trusted values (architecture doc, section A/J).
-    balances: {
-      ve: { type: Number, default: 0, min: 0 },
-      sve: { type: Number, default: 0, min: 0 },
-      token: { type: Number, default: 0, min: 0 },
+    // Separate integer columns (rather than one JSON blob) so a future join-flow
+    // transaction can lock and increment/decrement a single column directly.
+    balanceVe: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      validate: { min: 0 },
+    },
+    balanceSve: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      validate: { min: 0 },
+    },
+    balanceToken: {
+      type: DataTypes.INTEGER,
+      allowNull: false,
+      defaultValue: 0,
+      validate: { min: 0 },
     },
     // SHA-256 hash of the current refresh token, so a stolen DB dump can't be
     // replayed as a valid refresh token and a single token can be revoked on logout.
     refreshTokenHash: {
-      type: String,
-      select: false,
-      default: null,
+      type: DataTypes.STRING,
+      allowNull: true,
     },
     isVerified: {
-      type: Boolean,
-      default: false,
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
     },
   },
-  { timestamps: true },
+  {
+    sequelize,
+    modelName: 'User',
+    tableName: 'users',
+    timestamps: true,
+    defaultScope: {
+      // Mirrors Mongoose's `select: false` — secrets are excluded unless explicitly
+      // requested via User.scope('withSecrets'), the same opt-in pattern as before.
+      attributes: { exclude: ['passwordHash', 'refreshTokenHash'] },
+    },
+    scopes: {
+      withSecrets: {
+        attributes: {},
+      },
+    },
+  },
 );
 
-module.exports = mongoose.model('User', userSchema);
+module.exports = User;

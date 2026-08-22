@@ -1,6 +1,9 @@
 const request = require('supertest');
 
-process.env.MONGO_URI = process.env.MONGO_URI || 'mongodb://localhost:27017/veloop_test';
+process.env.DB_HOST = process.env.DB_HOST || 'localhost';
+process.env.DB_NAME = process.env.DB_NAME || 'veloop_test';
+process.env.DB_USER = process.env.DB_USER || 'veloop';
+process.env.DB_PASSWORD = process.env.DB_PASSWORD || 'veloop_dev_password';
 process.env.JWT_SECRET = process.env.JWT_SECRET || 'test-secret';
 process.env.REFRESH_SECRET = process.env.REFRESH_SECRET || 'test-refresh-secret';
 process.env.CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:5173';

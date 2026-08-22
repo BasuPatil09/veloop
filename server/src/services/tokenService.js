@@ -4,7 +4,7 @@ const { env } = require('../config/env');
 
 /** Short-lived access token carried in the Authorization header. */
 function signAccessToken(user) {
-  return jwt.sign({ sub: user._id.toString(), role: user.role }, env.jwtSecret, {
+  return jwt.sign({ sub: user.id, role: user.role, jti: crypto.randomUUID() }, env.jwtSecret, {
     expiresIn: env.jwtExpiresIn,
   });
 }
@@ -15,7 +15,7 @@ function verifyAccessToken(token) {
 
 /** Longer-lived refresh token carried in an httpOnly cookie. Only its hash is stored on the user. */
 function signRefreshToken(user) {
-  return jwt.sign({ sub: user._id.toString() }, env.refreshSecret, {
+  return jwt.sign({ sub: user.id, jti: crypto.randomUUID() }, env.refreshSecret, {
     expiresIn: env.refreshExpiresIn,
   });
 }

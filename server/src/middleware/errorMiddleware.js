@@ -12,16 +12,21 @@ function errorHandler(err, req, res, next) {
     return fail(res, err.statusCode, err.code, err.message);
   }
 
-  // Mongoose duplicate key (e.g. email already registered, or the
-  // user+giveaway unique index catching a race condition)
-  if (err.code === 11000) {
+  // Sequelize unique constraint violation (e.g. email already registered, or the
+  // userId+giveawayId unique key catching a race condition on join)
+  if (err.name === 'SequelizeUniqueConstraintError') {
     return fail(res, 409, ErrorCodes.VALIDATION_ERROR, 'This record already exists.');
   }
 
-  // Mongoose validation errors
-  if (err.name === 'ValidationError') {
-    const message = Object.values(err.errors).map((e) => e.message).join(', ');
+  // Sequelize model validation errors (e.g. isEmail, min, notEmpty)
+  if (err.name === 'SequelizeValidationError') {
+    const message = err.errors.map((e) => e.message).join(', ');
     return fail(res, 400, ErrorCodes.VALIDATION_ERROR, message);
+  }
+
+  // Foreign key violation (e.g. referencing a giveawayId/prizeId that doesn't exist)
+  if (err.name === 'SequelizeForeignKeyConstraintError') {
+    return fail(res, 400, ErrorCodes.VALIDATION_ERROR, 'This request references something that no longer exists.');
   }
 
   // Anything unexpected: log the real error server-side, never expose it to the client.

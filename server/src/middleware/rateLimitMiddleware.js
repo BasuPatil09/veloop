@@ -12,12 +12,18 @@ function friendlyLimitHandler(req, res) {
   });
 }
 
+// Test runs fire many requests in quick succession from the same "IP" — that's a
+// property of the test harness, not real traffic, so rate limiting is a no-op there.
+// It stays fully active in development and production.
+const skipInTest = () => env.nodeEnv === 'test';
+
 // Generous general-purpose limiter, applied globally in app.js.
 const generalLimiter = rateLimit({
   windowMs: env.rateLimitWindowMs,
   max: env.rateLimitMax,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
   handler: friendlyLimitHandler,
 });
 
@@ -27,6 +33,7 @@ const authLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
   handler: friendlyLimitHandler,
 });
 
@@ -36,6 +43,7 @@ const sensitiveActionLimiter = rateLimit({
   max: 10,
   standardHeaders: true,
   legacyHeaders: false,
+  skip: skipInTest,
   handler: friendlyLimitHandler,
 });
 

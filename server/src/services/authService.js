@@ -10,7 +10,7 @@ const {
 } = require('./tokenService');
 
 async function registerUser({ name, email, password }) {
-  const existing = await User.findOne({ email });
+  const existing = await User.findOne({ where: { email: email.toLowerCase().trim() } });
   if (existing) {
     throw new ApiError(409, ErrorCodes.EMAIL_ALREADY_REGISTERED, 'An account with this email already exists.');
   }
@@ -21,7 +21,7 @@ async function registerUser({ name, email, password }) {
 }
 
 async function verifyCredentials(email, password) {
-  const user = await User.findOne({ email }).select('+passwordHash');
+  const user = await User.scope('withSecrets').findOne({ where: { email: email.toLowerCase().trim() } });
   if (!user) {
     throw new ApiError(401, ErrorCodes.INVALID_CREDENTIALS, 'Incorrect email or password.');
   }
@@ -54,7 +54,7 @@ async function rotateSession(refreshToken) {
     throw new ApiError(401, ErrorCodes.INVALID_REFRESH_TOKEN, 'Your session has expired. Please log in again.');
   }
 
-  const user = await User.findById(payload.sub).select('+refreshTokenHash');
+  const user = await User.scope('withSecrets').findByPk(payload.sub);
   if (!user || !user.refreshTokenHash || user.refreshTokenHash !== hashToken(refreshToken)) {
     throw new ApiError(401, ErrorCodes.INVALID_REFRESH_TOKEN, 'Your session has expired. Please log in again.');
   }
@@ -63,7 +63,7 @@ async function rotateSession(refreshToken) {
 }
 
 async function revokeSession(userId) {
-  await User.findByIdAndUpdate(userId, { refreshTokenHash: null });
+  await User.update({ refreshTokenHash: null }, { where: { id: userId } });
 }
 
 module.exports = { registerUser, verifyCredentials, issueSession, rotateSession, revokeSession };

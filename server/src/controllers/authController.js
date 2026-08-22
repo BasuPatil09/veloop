@@ -62,7 +62,7 @@ const logout = asyncHandler(async (req, res) => {
 });
 
 const me = asyncHandler(async (req, res) => {
-  const user = await User.findById(req.user.id);
+  const user = await User.findByPk(req.user.id);
   if (!user) {
     throw new ApiError(404, ErrorCodes.NOT_FOUND, 'User not found.');
   }
