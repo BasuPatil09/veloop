@@ -1,0 +1,32 @@
+.wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.joinedCard {
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
+  background: var(--veloop-success-tint);
+  border: 1px solid rgba(47, 111, 78, 0.25);
+  border-radius: var(--radius-md);
+  padding: 16px;
+}
+
+.successIcon {
+  color: var(--veloop-success);
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.joinedTitle {
+  font-weight: 700;
+  color: var(--veloop-success);
+  margin-bottom: 2px;
+}
+
+.joinedSubtitle {
+  font-size: 0.85rem;
+  color: var(--veloop-text-muted);
+}

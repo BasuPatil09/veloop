@@ -49,6 +49,13 @@ export function AuthProvider({ children }) {
     setUser(null);
   }, []);
 
+  // Called right after a successful join (participationService) so the displayed
+  // balance reflects the real server-side deduction immediately, instead of going
+  // stale until the next login/refresh. currencyKey is 've' | 'sve' | 'token'.
+  const updateBalance = useCallback((currencyKey, newBalance) => {
+    setUser((prev) => (prev ? { ...prev, balances: { ...prev.balances, [currencyKey]: newBalance } } : prev));
+  }, []);
+
   const value = {
     user,
     isAuthenticated: Boolean(user),
@@ -57,6 +64,7 @@ export function AuthProvider({ children }) {
     login,
     register,
     logout,
+    updateBalance,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

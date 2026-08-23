@@ -1,0 +1,55 @@
+.prizeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-weight: 600;
+  margin-bottom: 18px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid var(--veloop-border);
+}
+
+.rows {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.9rem;
+}
+
+.rowLabel {
+  color: var(--veloop-text-muted);
+}
+
+.rowValue {
+  font-family: var(--font-mono);
+  font-weight: 600;
+}
+
+.rowValueEmphasis {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  color: var(--veloop-primary);
+  font-size: 1.05rem;
+}
+
+.disclaimer {
+  font-size: 0.78rem;
+  color: var(--veloop-text-muted);
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+.actions {
+  display: flex;
+  gap: 12px;
+}
+
+.actions > * {
+  flex: 1;
+}

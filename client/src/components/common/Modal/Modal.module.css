@@ -1,0 +1,73 @@
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(16, 25, 22, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  z-index: 100;
+  animation: fadeIn var(--duration-base) var(--ease-standard);
+}
+
+.modal {
+  background: var(--veloop-surface-card);
+  border-radius: var(--radius-lg);
+  max-width: 440px;
+  width: 100%;
+  padding: 28px;
+  box-shadow: var(--shadow-card-hover);
+  position: relative;
+  max-height: 90vh;
+  overflow-y: auto;
+  animation: riseIn var(--duration-base) var(--ease-standard);
+}
+
+.closeButton {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  display: inline-flex;
+  background: transparent;
+  border: none;
+  color: var(--veloop-text-muted);
+  padding: 4px;
+  border-radius: var(--radius-sm);
+}
+
+.closeButton:hover {
+  color: var(--veloop-ink);
+}
+
+.title {
+  font-size: 1.25rem;
+  margin-bottom: 18px;
+  padding-right: 24px;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes riseIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay,
+  .modal {
+    animation: none;
+  }
+}

@@ -1,0 +1,276 @@
+.backNav {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 20px 24px 0;
+}
+
+.backLink {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--veloop-text-muted);
+  font-size: 0.88rem;
+  font-weight: 500;
+}
+
+.backLink:hover {
+  color: var(--veloop-primary);
+}
+
+.hero {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 24px 24px 40px;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 28px;
+}
+
+@media (min-width: 900px) {
+  .hero {
+    grid-template-columns: 0.9fr 1.1fr;
+    align-items: start;
+  }
+}
+
+.imagePanel {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: var(--radius-lg);
+  background: linear-gradient(155deg, var(--veloop-primary-tint) 0%, var(--veloop-accent-gold-tint) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+
+.imagePanel img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.imageFallbackIcon {
+  color: var(--veloop-primary);
+  opacity: 0.45;
+}
+
+.infoCol {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.badgeRow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--veloop-accent-gold-tint);
+  color: var(--veloop-accent-gold);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.statusPill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: 999px;
+  background: var(--veloop-primary-tint);
+  color: var(--veloop-primary-dark);
+}
+
+.dotLive {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--veloop-success);
+}
+
+.title {
+  font-size: clamp(1.6rem, 3.4vw, 2.3rem);
+}
+
+.description {
+  color: var(--veloop-text-muted);
+  line-height: 1.6;
+}
+
+.countdownBlock {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.countdownLabel {
+  font-size: 0.78rem;
+  color: var(--veloop-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.infoCard {
+  border: 1px solid var(--veloop-border);
+  border-radius: var(--radius-lg);
+  background: var(--veloop-surface-card);
+  padding: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.metaGrid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+}
+
+.metaItem {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.metaLabel {
+  font-size: 0.72rem;
+  color: var(--veloop-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.metaValue {
+  font-weight: 600;
+  color: var(--veloop-ink);
+}
+
+.entryFeeRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-top: 14px;
+  border-top: 1px solid var(--veloop-border);
+}
+
+.entryFeeLabel {
+  font-size: 0.78rem;
+  color: var(--veloop-text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.entryFeeValue {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--veloop-ink);
+}
+
+/* --- Shared section wrapper for How-it-works / T&C / Important Info --- */
+.section {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 8px 24px 48px;
+}
+
+.sectionTitle {
+  font-size: 1.3rem;
+  margin-bottom: 20px;
+}
+
+.stepList {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 768px) {
+  .stepList {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.step {
+  border: 1px solid var(--veloop-border);
+  border-radius: var(--radius-md);
+  padding: 16px;
+  background: var(--veloop-surface-card);
+}
+
+.stepNumber {
+  font-family: var(--font-mono);
+  color: var(--veloop-primary);
+  font-weight: 700;
+  font-size: 0.85rem;
+  margin-bottom: 6px;
+}
+
+.stepTitle {
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.stepText {
+  font-size: 0.85rem;
+  color: var(--veloop-text-muted);
+  line-height: 1.5;
+}
+
+.termsCard {
+  border: 1px solid var(--veloop-border);
+  border-radius: var(--radius-md);
+  background: var(--veloop-surface-card);
+  padding: 22px;
+}
+
+.placeholderBadge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--veloop-accent-gold);
+  background: var(--veloop-accent-gold-tint);
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-bottom: 14px;
+}
+
+.termsList {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.termsRow {
+  display: flex;
+  gap: 12px;
+  font-size: 0.88rem;
+  line-height: 1.55;
+}
+
+.termsRowLabel {
+  flex-shrink: 0;
+  width: 150px;
+  font-weight: 600;
+  color: var(--veloop-ink);
+}
+
+.termsRowValue {
+  color: var(--veloop-text-muted);
+}

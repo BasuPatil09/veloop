@@ -1,0 +1,21 @@
+.wrap {
+  text-align: center;
+}
+
+.icon {
+  color: var(--veloop-primary);
+  margin-bottom: 12px;
+}
+
+.message {
+  color: var(--veloop-text-muted);
+  font-size: 0.92rem;
+  line-height: 1.55;
+  margin-bottom: 22px;
+}
+
+.actions {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
