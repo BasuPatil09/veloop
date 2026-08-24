@@ -1,0 +1,51 @@
+.wrap {
+  overflow: hidden;
+  border-top: 1px solid var(--veloop-border);
+  border-bottom: 1px solid var(--veloop-border);
+  background: var(--veloop-surface-card);
+  padding: 14px 0;
+}
+
+.track {
+  display: flex;
+  gap: 14px;
+  width: max-content;
+  animation: marquee 34s linear infinite;
+}
+
+.wrap:hover .track {
+  animation-play-state: paused;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  background: var(--veloop-primary-tint);
+  color: var(--veloop-primary-dark);
+  font-size: 0.82rem;
+  font-weight: 500;
+  padding: 7px 14px;
+  border-radius: 999px;
+}
+
+.pill strong {
+  font-family: var(--font-mono);
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .track {
+    animation: none;
+    overflow-x: auto;
+  }
+}

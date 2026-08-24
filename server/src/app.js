@@ -12,8 +12,9 @@ const { ok } = require('./utils/apiResponse');
 const authRoutes = require('./routes/authRoutes');
 const giveawayRoutes = require('./routes/giveawayRoutes');
 const participationRoutes = require('./routes/participationRoutes');
+const winnerRoutes = require('./routes/winnerRoutes');
+const claimRoutes = require('./routes/claimRoutes');
 const adminRoutes = require('./routes/adminRoutes');
-// Phase 4+: winnerRoutes, claimRoutes
 
 const app = express();
 
@@ -34,8 +35,9 @@ app.get('/api/health', (req, res) => ok(res, { status: 'ok', env: env.nodeEnv })
 app.use('/api/auth', authRoutes);
 app.use('/api/giveaways', giveawayRoutes);
 app.use('/api/giveaways', participationRoutes);
+app.use('/api/giveaways', winnerRoutes);
+app.use('/api/giveaways', claimRoutes);
 app.use('/api/admin', adminRoutes);
-// Phase 4+: app.use('/api/giveaways', winnerRoutes); app.use('/api/giveaways', claimRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

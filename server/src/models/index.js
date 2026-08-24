@@ -4,6 +4,8 @@ const Giveaway = require('./Giveaway');
 const Prize = require('./Prize');
 const GiveawayParticipation = require('./GiveawayParticipation');
 const GiveawayEntryTransaction = require('./GiveawayEntryTransaction');
+const GiveawayWinner = require('./GiveawayWinner');
+const PrizeClaim = require('./PrizeClaim');
 
 // Associations are declared centrally, once, to avoid circular requires between
 // model files. Anything that needs an association (`include: [...]`, eager
@@ -29,4 +31,25 @@ GiveawayEntryTransaction.belongsTo(User, { foreignKey: 'userId' });
 GiveawayEntryTransaction.belongsTo(Giveaway, { foreignKey: 'giveawayId' });
 GiveawayEntryTransaction.belongsTo(Prize, { foreignKey: 'prizeId' });
 
-module.exports = { sequelize, User, Giveaway, Prize, GiveawayParticipation, GiveawayEntryTransaction };
+Giveaway.hasMany(GiveawayWinner, { as: 'winners', foreignKey: 'giveawayId' });
+GiveawayWinner.belongsTo(Giveaway, { as: 'giveaway', foreignKey: 'giveawayId' });
+Prize.hasMany(GiveawayWinner, { foreignKey: 'prizeId' });
+GiveawayWinner.belongsTo(Prize, { as: 'prize', foreignKey: 'prizeId' });
+User.hasMany(GiveawayWinner, { foreignKey: 'userId' });
+GiveawayWinner.belongsTo(User, { foreignKey: 'userId' });
+
+GiveawayWinner.hasOne(PrizeClaim, { as: 'claim', foreignKey: 'winnerId' });
+PrizeClaim.belongsTo(GiveawayWinner, { as: 'winner', foreignKey: 'winnerId' });
+PrizeClaim.belongsTo(User, { foreignKey: 'userId' });
+PrizeClaim.belongsTo(Prize, { foreignKey: 'prizeId' });
+
+module.exports = {
+  sequelize,
+  User,
+  Giveaway,
+  Prize,
+  GiveawayParticipation,
+  GiveawayEntryTransaction,
+  GiveawayWinner,
+  PrizeClaim,
+};

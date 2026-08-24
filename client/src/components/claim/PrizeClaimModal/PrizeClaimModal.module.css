@@ -1,0 +1,26 @@
+.prizeLine {
+  font-size: 0.92rem;
+  margin-bottom: 18px;
+  color: var(--veloop-text-muted);
+}
+
+.prizeLine strong {
+  color: var(--veloop-ink);
+}
+
+.successState {
+  text-align: center;
+  padding: 12px 0 4px;
+}
+
+.successTitle {
+  font-weight: 700;
+  color: var(--veloop-success);
+  font-size: 1.1rem;
+  margin-bottom: 6px;
+}
+
+.successText {
+  color: var(--veloop-text-muted);
+  font-size: 0.9rem;
+}

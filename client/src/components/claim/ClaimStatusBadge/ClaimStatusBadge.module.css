@@ -1,0 +1,23 @@
+.badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 999px;
+}
+
+.info {
+  background: var(--veloop-primary-tint);
+  color: var(--veloop-primary-dark);
+}
+
+.success {
+  background: var(--veloop-success-tint);
+  color: var(--veloop-success);
+}
+
+.danger {
+  background: var(--veloop-danger-tint);
+  color: var(--veloop-danger);
+}

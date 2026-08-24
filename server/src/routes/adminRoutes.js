@@ -1,4 +1,5 @@
 const express = require('express');
+const { param } = require('express-validator');
 const adminGiveawayController = require('../controllers/adminGiveawayController');
 const { requireAuth } = require('../middleware/authMiddleware');
 const { requireRole } = require('../middleware/requireRole');
@@ -12,5 +13,10 @@ const router = express.Router();
 router.use(requireAuth, requireRole('admin'));
 
 router.post('/giveaways', validate(createGiveawayValidator), adminGiveawayController.createGiveaway);
+router.post(
+  '/giveaways/:id/select-winners',
+  validate([param('id').isUUID().withMessage('Invalid giveaway.')]),
+  adminGiveawayController.selectWinners,
+);
 
 module.exports = router;

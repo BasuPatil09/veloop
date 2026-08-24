@@ -23,14 +23,6 @@ export function ParticipationCTA({ prize, giveaway }) {
     );
   }
 
-  if (giveaway.status === 'ended' || giveaway.status === 'archived') {
-    return (
-      <div className={styles.wrap}>
-        <Button disabled>Giveaway Ended</Button>
-      </div>
-    );
-  }
-
   if (isAuthenticated && isStatusLoading) {
     return (
       <div className={styles.wrap}>

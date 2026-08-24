@@ -1,5 +1,6 @@
 const { sequelize, Giveaway, Prize } = require('../models');
 const giveawayService = require('../services/giveawayService');
+const winnerService = require('../services/winnerService');
 const { ok } = require('../utils/apiResponse');
 const { asyncHandler } = require('../utils/asyncHandler');
 const { serializeGiveaway } = require('../utils/serializeGiveaway');
@@ -58,4 +59,9 @@ const createGiveaway = asyncHandler(async (req, res) => {
   return ok(res, { giveaway: serializeGiveaway(full) }, 201);
 });
 
-module.exports = { createGiveaway };
+const selectWinners = asyncHandler(async (req, res) => {
+  const summary = await winnerService.selectWinnersForGiveaway(req.params.id);
+  return ok(res, { summary });
+});
+
+module.exports = { createGiveaway, selectWinners };

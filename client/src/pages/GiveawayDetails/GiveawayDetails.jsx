@@ -5,6 +5,7 @@ import { VeloopLoader } from '../../components/common/VeloopLoader/VeloopLoader'
 import { ErrorState } from '../../components/common/ErrorState/ErrorState';
 import { Countdown } from '../../components/giveaway/Countdown/Countdown';
 import { ParticipationCTA } from '../../components/participation/ParticipationCTA/ParticipationCTA';
+import { WinnerStatus } from '../../components/claim/WinnerStatus/WinnerStatus';
 import { formatEntryFee } from '../../utils/currencyFormatter';
 import styles from './GiveawayDetails.module.css';
 
@@ -108,7 +109,11 @@ export default function GiveawayDetails() {
               <span className={styles.entryFeeValue}>{formatEntryFee(prize.entryAmount, prize.entryCurrency)}</span>
             </div>
 
-            <ParticipationCTA prize={prize} giveaway={giveaway} />
+            {isActive || isUpcoming ? (
+              <ParticipationCTA prize={prize} giveaway={giveaway} />
+            ) : (
+              <WinnerStatus prize={prize} />
+            )}
           </div>
         </div>
       </div>

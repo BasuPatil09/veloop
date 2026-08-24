@@ -1,0 +1,11 @@
+.row3 {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 12px;
+}
+
+@media (max-width: 420px) {
+  .row3 {
+    grid-template-columns: 1fr;
+  }
+}
