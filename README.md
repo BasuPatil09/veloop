@@ -4,10 +4,11 @@ A full-stack giveaway/rewards platform, per the VELOOP Rewards internship assign
 See `VELOOP_Architecture.md` for the complete system design (routes, API map, DB schema,
 security/fraud plan, and the full phase-by-phase roadmap).
 
-> **Status: Phases 0–6 complete** — scaffold, auth, giveaway core, the join flow, winner
-> selection + claims, fraud scoring + audit logging, and full UX polish (How It Works, Trust,
-> Rules, FAQ, winner-reveal and scroll-in animations). Testing (Phase 7) and deployment
-> (Phase 8) remain.
+> **Status: Phases 0–8 complete.** Full giveaway platform: auth, giveaway core, the join
+> flow, winner selection + claims, fraud scoring + audit logging, UX polish, an expanded test
+> suite (see `TESTING.md`), and a deployment guide (see `DEPLOYMENT.md`). The guide is
+> copy-pasteable but **not yet executed** — I don't have Vercel/Render/database credentials
+> to deploy this myself; follow `DEPLOYMENT.md` to actually put it live.
 
 > **Database note:** the assignment spec names MongoDB/Mongoose specifically. This project
 > uses **MySQL + Sequelize** instead — a deliberate, documented substitution (see
@@ -34,8 +35,9 @@ security/fraud plan, and the full phase-by-phase roadmap).
 - **UX**: How to Participate, Trust section, Rules (clearly marked demo/placeholder where
   real policy isn't defined), FAQ accordion, winner-reveal and scroll-in animations, full
   loading/error/empty states throughout.
-- **66 passing backend tests**, all against a real MySQL/MariaDB database. `npm run build`
-  (client) and `npm test` / `npm run lint` (both) pass clean.
+- **66 passing backend tests + 39 passing frontend tests**, all against a real MySQL/MariaDB
+  database. `npm run build` (client) and `npm test` / `npm run lint` (both) pass clean. See
+  `TESTING.md` for the full coverage matrix and `DEPLOYMENT.md` for going live.
 
 ## Setup
 
@@ -75,10 +77,15 @@ Invoke-RestMethod -Uri "http://localhost:5000/api/admin/giveaways/<giveawayId>/s
 
 ## Testing
 
+See `TESTING.md` for the full matrix mapping the spec's required test coverage to actual
+automated tests and manual verification.
+
 ```bash
 cd server && npm test    # Jest + Supertest, --runInBand, needs DB_NAME=veloop_test (or similar)
+                          # 66 tests: auth, giveaways, join flow, winners, claims, fraud scoring
 ```
 ```bash
+cd client && npm test    # Vitest + React Testing Library — 39 tests
 cd client && npm run build && npm run lint
 ```
 
@@ -91,6 +98,8 @@ cd client && npm run build && npm run lint
   directly by `fraud.integration.test.js`, calling the service without going through HTTP.
 - Schema via `sequelize.sync({ alter: true })` in development, not formal migrations yet.
 
-## Deployment (planned — Phase 8)
+## Deployment
 
-Frontend → Vercel · Backend → Render/Railway · Database → a managed MySQL host. Not yet deployed.
+See `DEPLOYMENT.md` for the full step-by-step guide: Vercel (frontend) + Render (backend) +
+a managed MySQL host, including the exact environment variables each platform needs and a
+cross-domain cookie configuration detail (`SameSite=None; Secure`) that's easy to miss.

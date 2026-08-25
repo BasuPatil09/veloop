@@ -10,8 +10,15 @@ const REFRESH_COOKIE_NAME = 'veloop_refresh_token';
 
 const refreshCookieOptions = {
   httpOnly: true,
+  // Production deploys the frontend and backend on different domains (e.g. a
+  // vercel.app frontend calling an onrender.com backend). SameSite=Lax only
+  // sends cookies on cross-site top-level navigation, NOT on cross-site
+  // fetch/XHR — which is exactly how the refresh call is made. SameSite=None
+  // is required for that to work, and browsers mandate Secure whenever
+  // SameSite=None is used. Local dev stays same-site (both on localhost), so
+  // Lax + non-secure works fine there without needing HTTPS locally.
   secure: env.nodeEnv === 'production',
-  sameSite: 'lax',
+  sameSite: env.nodeEnv === 'production' ? 'none' : 'lax',
   maxAge: env.refreshExpiresInMs,
   path: '/api/auth',
 };
