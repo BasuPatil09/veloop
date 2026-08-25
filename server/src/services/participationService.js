@@ -1,6 +1,17 @@
-const { sequelize, User, Giveaway, Prize, GiveawayParticipation, GiveawayEntryTransaction } = require('../models');
+const {
+  sequelize,
+  User,
+  Giveaway,
+  Prize,
+  GiveawayParticipation,
+  GiveawayEntryTransaction,
+  FraudEvent,
+} = require('../models');
 const giveawayService = require('./giveawayService');
 const balanceService = require('./balanceService');
+const fraudService = require('./fraudService');
+const auditService = require('./auditService');
+const { env } = require('../config/env');
 const { ApiError, ErrorCodes } = require('../utils/errorCodes');
 
 async function getMyStatus(userId, prizeId) {
@@ -45,9 +56,11 @@ async function join(userId, prizeId, { idempotencyKey, deviceHash, ipHash } = {}
   // certainly never trust anything the client claims about giveaway state.
   const effectiveStatus = giveawayService.computeEffectiveStatus(giveaway);
   if (effectiveStatus === 'upcoming') {
+    await auditService.log({ userId, action: 'JOIN_REJECTED', giveawayId: giveaway.id, result: 'GIVEAWAY_UPCOMING', meta: { prizeId } });
     throw new ApiError(409, ErrorCodes.GIVEAWAY_UPCOMING, 'This giveaway has not started yet.');
   }
   if (effectiveStatus === 'ended' || effectiveStatus === 'archived') {
+    await auditService.log({ userId, action: 'JOIN_REJECTED', giveawayId: giveaway.id, result: 'GIVEAWAY_ENDED', meta: { prizeId } });
     throw new ApiError(409, ErrorCodes.GIVEAWAY_ENDED, 'This giveaway has ended.');
   }
 
@@ -56,11 +69,47 @@ async function join(userId, prizeId, { idempotencyKey, deviceHash, ipHash } = {}
   // race — see the catch block below.
   const existing = await GiveawayParticipation.findOne({ where: { userId, prizeId } });
   if (existing) {
+    await auditService.log({ userId, action: 'DUPLICATE_ATTEMPT', giveawayId: giveaway.id, meta: { prizeId } });
     throw new ApiError(409, ErrorCodes.ALREADY_PARTICIPATING, "You're already participating in this giveaway.");
   }
 
+  // Fraud scoring: no single signal is treated as definitive proof (spec §21) —
+  // FLAGGED attempts are logged but still allowed through; only HIGH/CRITICAL
+  // scores block. Test requests all share one loopback IP/UA (no real device
+  // fingerprint exists in a test harness), so enforcement — not the scoring or
+  // logging itself — is skipped under NODE_ENV=test, same rationale as
+  // rateLimitMiddleware.js. fraudService's scoring logic is covered directly by
+  // fraud.integration.test.js instead.
+  const { score, signals, action: fraudAction } = await fraudService.scoreJoinAttempt({ userId, deviceHash });
+  if (fraudAction !== 'ALLOWED') {
+    await FraudEvent.create({
+      userId,
+      giveawayId: giveaway.id,
+      deviceHash,
+      ipHash,
+      riskScore: score,
+      reason: signals.join(', ') || null,
+      signals,
+      action: fraudAction,
+    });
+  }
+  if (fraudAction === 'BLOCKED' && env.nodeEnv !== 'test') {
+    await auditService.log({
+      userId,
+      action: 'FRAUD_FLAGGED',
+      giveawayId: giveaway.id,
+      result: 'BLOCKED',
+      meta: { prizeId, score, signals },
+    });
+    throw new ApiError(
+      403,
+      ErrorCodes.SUSPICIOUS_ACTIVITY,
+      "We couldn't verify this request. Please try again later or contact support if this seems wrong.",
+    );
+  }
+
   try {
-    return await sequelize.transaction(async (t) => {
+    const result = await sequelize.transaction(async (t) => {
       // Row-locked read (SELECT ... FOR UPDATE) so two concurrent requests for the
       // same user can't both read the same starting balance and both succeed.
       const user = await User.findByPk(userId, { transaction: t, lock: t.LOCK.UPDATE });
@@ -106,6 +155,18 @@ async function join(userId, prizeId, { idempotencyKey, deviceHash, ipHash } = {}
 
       return { participation, transaction: entryTransaction, replayed: false };
     });
+
+    await auditService.log({
+      userId,
+      action: 'JOIN_GIVEAWAY',
+      giveawayId: giveaway.id,
+      amount: prize.entryAmount,
+      currency: prize.entryCurrency,
+      result: 'SUCCESS',
+      meta: { prizeId },
+    });
+
+    return result;
   } catch (err) {
     // The pre-check above misses a genuine race (two simultaneous requests both
     // passing it before either commits) — the DB constraint still catches it, we

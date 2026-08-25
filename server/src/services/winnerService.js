@@ -8,6 +8,7 @@ const {
   PrizeClaim,
 } = require('../models');
 const giveawayService = require('./giveawayService');
+const auditService = require('./auditService');
 const { ApiError, ErrorCodes } = require('../utils/errorCodes');
 
 const CLAIM_WINDOW_DAYS = 7;
@@ -90,6 +91,15 @@ async function selectWinnersForGiveaway(giveawayId) {
           },
           { transaction: t },
         );
+
+        // eslint-disable-next-line no-await-in-loop -- deliberate: keeps audit rows
+        // in the same order winners were created, and volume here is small (winnerCount).
+        await auditService.log({
+          userId: participation.userId,
+          action: 'WINNER_SELECTED',
+          giveawayId: giveaway.id,
+          meta: { prizeId: prize.id, winnerId: winner.id },
+        });
       }
 
       summary.push({

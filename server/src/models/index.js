@@ -6,6 +6,8 @@ const GiveawayParticipation = require('./GiveawayParticipation');
 const GiveawayEntryTransaction = require('./GiveawayEntryTransaction');
 const GiveawayWinner = require('./GiveawayWinner');
 const PrizeClaim = require('./PrizeClaim');
+const FraudEvent = require('./FraudEvent');
+const AuditLog = require('./AuditLog');
 
 // Associations are declared centrally, once, to avoid circular requires between
 // model files. Anything that needs an association (`include: [...]`, eager
@@ -43,6 +45,14 @@ PrizeClaim.belongsTo(GiveawayWinner, { as: 'winner', foreignKey: 'winnerId' });
 PrizeClaim.belongsTo(User, { foreignKey: 'userId' });
 PrizeClaim.belongsTo(Prize, { foreignKey: 'prizeId' });
 
+User.hasMany(FraudEvent, { foreignKey: 'userId' });
+FraudEvent.belongsTo(User, { foreignKey: 'userId' });
+FraudEvent.belongsTo(Giveaway, { foreignKey: 'giveawayId' });
+
+User.hasMany(AuditLog, { foreignKey: 'userId' });
+AuditLog.belongsTo(User, { foreignKey: 'userId' });
+AuditLog.belongsTo(Giveaway, { foreignKey: 'giveawayId' });
+
 module.exports = {
   sequelize,
   User,
@@ -52,4 +62,6 @@ module.exports = {
   GiveawayEntryTransaction,
   GiveawayWinner,
   PrizeClaim,
+  FraudEvent,
+  AuditLog,
 };

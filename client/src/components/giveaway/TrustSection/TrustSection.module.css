@@ -1,0 +1,71 @@
+.section {
+  max-width: 1180px;
+  margin: 0 auto;
+  padding: 8px 24px 64px;
+}
+
+.sectionHead {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--veloop-primary);
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-top: 8px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.card {
+  border: 1px solid var(--veloop-border);
+  border-radius: var(--radius-lg);
+  background: var(--veloop-surface-card);
+  padding: 22px;
+}
+
+.iconWrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-sm);
+  background: var(--veloop-primary-tint);
+  color: var(--veloop-primary);
+  margin-bottom: 14px;
+}
+
+.cardTitle {
+  font-weight: 600;
+  margin-bottom: 6px;
+}
+
+.cardText {
+  font-size: 0.85rem;
+  color: var(--veloop-text-muted);
+  line-height: 1.55;
+}

@@ -1,0 +1,67 @@
+.section {
+  max-width: 900px;
+  margin: 0 auto;
+  padding: 8px 24px 64px;
+}
+
+.sectionHead {
+  text-align: center;
+  margin-bottom: 28px;
+}
+
+.eyebrow {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--veloop-primary);
+}
+
+.title {
+  font-size: 1.8rem;
+  margin-top: 8px;
+}
+
+.card {
+  border: 1px solid var(--veloop-border);
+  border-radius: var(--radius-lg);
+  background: var(--veloop-surface-card);
+  padding: 26px;
+}
+
+.placeholderBadge {
+  display: inline-block;
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--veloop-accent-gold);
+  background: var(--veloop-accent-gold-tint);
+  padding: 3px 9px;
+  border-radius: 999px;
+  margin-bottom: 18px;
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.item {
+  display: flex;
+  gap: 12px;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+
+.itemLabel {
+  flex-shrink: 0;
+  width: 160px;
+  font-weight: 600;
+  color: var(--veloop-ink);
+}
+
+.itemText {
+  color: var(--veloop-text-muted);
+}

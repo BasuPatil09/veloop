@@ -1,4 +1,5 @@
 const { GiveawayWinner, PrizeClaim, Prize } = require('../models');
+const auditService = require('./auditService');
 const { ApiError, ErrorCodes } = require('../utils/errorCodes');
 
 async function getMyClaim(userId, prizeId) {
@@ -57,6 +58,15 @@ async function submitClaim(userId, prizeId, payload) {
   }
 
   await claim.update(updates);
+
+  await auditService.log({
+    userId,
+    action: 'CLAIM_SUBMITTED',
+    giveawayId: winner.giveawayId,
+    result: 'SUCCESS',
+    meta: { prizeId, winnerId: winner.id },
+  });
+
   return claim;
 }
 

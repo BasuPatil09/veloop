@@ -1,5 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { PartyPopper } from 'lucide-react';
 import { useAuth } from '../../../hooks/useAuth';
 import { useClaim } from '../../../hooks/useClaim';
@@ -12,6 +13,16 @@ export function WinnerStatus({ prize }) {
   const { isAuthenticated } = useAuth();
   const { isWinner, winner, claim, isLoading, submitClaim, isSubmitting, submitError } = useClaim(prize.id);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
+  // A brief, controlled "revealing" beat before the winner card animates in —
+  // deliberately not a slot-machine spin or repeated randomization, just a single
+  // considered pause (spec §47: polished, not gambling-like).
+  const [hasRevealed, setHasRevealed] = useState(false);
+
+  useEffect(() => {
+    if (!isWinner || isLoading) return undefined;
+    const timeout = window.setTimeout(() => setHasRevealed(true), 400);
+    return () => window.clearTimeout(timeout);
+  }, [isWinner, isLoading]);
 
   if (!isAuthenticated) {
     return (
@@ -44,8 +55,21 @@ export function WinnerStatus({ prize }) {
     );
   }
 
+  if (!hasRevealed) {
+    return (
+      <div className={styles.neutralCard}>
+        <p className={styles.neutralText}>Revealing your result...</p>
+      </div>
+    );
+  }
+
   return (
-    <div className={styles.winnerCard}>
+    <motion.div
+      className={styles.winnerCard}
+      initial={{ opacity: 0, scale: 0.96, y: 6 }}
+      animate={{ opacity: 1, scale: 1, y: 0 }}
+      transition={{ duration: 0.35, ease: [0.2, 0.7, 0.3, 1] }}
+    >
       <PartyPopper size={22} className={styles.winnerIcon} aria-hidden="true" />
       <div className={styles.winnerBody}>
         <p className={styles.winnerTitle}>Congratulations! You won {prize.name}!</p>
@@ -72,6 +96,6 @@ export function WinnerStatus({ prize }) {
         isSubmitting={isSubmitting}
         error={submitError}
       />
-    </div>
+    </motion.div>
   );
 }

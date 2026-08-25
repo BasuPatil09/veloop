@@ -1,3 +1,4 @@
+import { motion } from 'framer-motion';
 import { useGiveaways } from '../../../hooks/useGiveaways';
 import { PrizeCard } from '../PrizeCard/PrizeCard';
 import { ErrorState } from '../../common/ErrorState/ErrorState';
@@ -46,8 +47,16 @@ export function FeaturedGiveaways() {
           <div className={styles.campaign} key={giveaway.id}>
             {giveaways.length > 1 && <h3 className={styles.campaignTitle}>{giveaway.title}</h3>}
             <div className={styles.grid}>
-              {giveaway.prizes.map((prize) => (
-                <PrizeCard key={prize.id} prize={prize} giveaway={giveaway} />
+              {giveaway.prizes.map((prize, index) => (
+                <motion.div
+                  key={prize.id}
+                  initial={{ opacity: 0, y: 16 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: '-40px' }}
+                  transition={{ duration: 0.4, delay: (index % 3) * 0.06, ease: [0.2, 0.7, 0.3, 1] }}
+                >
+                  <PrizeCard prize={prize} giveaway={giveaway} />
+                </motion.div>
               ))}
             </div>
           </div>
