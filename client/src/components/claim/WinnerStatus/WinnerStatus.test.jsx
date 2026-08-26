@@ -21,6 +21,7 @@ function renderStatus() {
 function mockClaim(overrides = {}) {
   useClaim.mockReturnValue({
     isWinner: false,
+    winnersFinalized: true,
     winner: null,
     claim: null,
     isLoading: false,
@@ -55,6 +56,15 @@ describe('WinnerStatus', () => {
     renderStatus();
     expect(screen.getByText(/didn.t win this time/i)).toBeInTheDocument();
     expect(screen.queryByRole('button', { name: /claim your prize/i })).not.toBeInTheDocument();
+  });
+
+  it('shows "not yet announced" rather than "you lost" before winners have been selected at all', () => {
+    useAuth.mockReturnValue({ isAuthenticated: true });
+    mockClaim({ isWinner: false, winnersFinalized: false });
+
+    renderStatus();
+    expect(screen.getByText(/haven.t been announced yet/i)).toBeInTheDocument();
+    expect(screen.queryByText(/didn.t win this time/i)).not.toBeInTheDocument();
   });
 
   it('reveals the winner card, with a claim button, after the brief reveal beat', () => {

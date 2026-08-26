@@ -114,6 +114,28 @@ describe('GET /api/giveaways/:prizeId/my-claim', () => {
     expect(res.body.data.claim.status).toBe('NOT_SUBMITTED');
     expect(res.body.data.claim.claimType).toBe('PHYSICAL');
   });
+
+  it('distinguishes "winners not yet selected" from "selected but you lost"', async () => {
+    const { giveaway, prize } = await createGiveawayAndPrize();
+    const { token: loserToken } = await createUser();
+
+    // Before ANY winner exists for this prize — selection simply hasn't run yet
+    const beforeSelection = await request(app)
+      .get(`/api/giveaways/${prize.id}/my-claim`)
+      .set('Authorization', `Bearer ${loserToken}`);
+    expect(beforeSelection.body.data.isWinner).toBe(false);
+    expect(beforeSelection.body.data.winnersFinalized).toBe(false);
+
+    // Someone else wins — selection has now run for this prize
+    const { user: winningUser } = await createUser();
+    await makeWinner(winningUser, prize, giveaway);
+
+    const afterSelection = await request(app)
+      .get(`/api/giveaways/${prize.id}/my-claim`)
+      .set('Authorization', `Bearer ${loserToken}`);
+    expect(afterSelection.body.data.isWinner).toBe(false);
+    expect(afterSelection.body.data.winnersFinalized).toBe(true);
+  });
 });
 
 describe('POST /api/giveaways/:prizeId/claim — ownership', () => {

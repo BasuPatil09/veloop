@@ -11,7 +11,8 @@ import styles from './WinnerStatus.module.css';
 
 export function WinnerStatus({ prize }) {
   const { isAuthenticated } = useAuth();
-  const { isWinner, winner, claim, isLoading, submitClaim, isSubmitting, submitError } = useClaim(prize.id);
+  const { isWinner, winnersFinalized, winner, claim, isLoading, submitClaim, isSubmitting, submitError } =
+    useClaim(prize.id);
   const [isClaimModalOpen, setIsClaimModalOpen] = useState(false);
   // A brief, controlled "revealing" beat before the winner card animates in —
   // deliberately not a slot-machine spin or repeated randomization, just a single
@@ -37,6 +38,15 @@ export function WinnerStatus({ prize }) {
     return (
       <div className={styles.neutralCard}>
         <p className={styles.neutralText}>Checking results...</p>
+      </div>
+    );
+  }
+
+  if (!isWinner && !winnersFinalized) {
+    return (
+      <div className={styles.neutralCard}>
+        <p className={styles.neutralTitle}>Giveaway Ended</p>
+        <p className={styles.neutralText}>Winners haven&apos;t been announced yet. Check back soon.</p>
       </div>
     );
   }

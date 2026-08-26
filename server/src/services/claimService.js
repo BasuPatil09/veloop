@@ -4,10 +4,19 @@ const { ApiError, ErrorCodes } = require('../utils/errorCodes');
 
 async function getMyClaim(userId, prizeId) {
   const winner = await GiveawayWinner.findOne({ where: { prizeId, userId } });
-  if (!winner) return { isWinner: false, winner: null, claim: null };
+
+  if (!winner) {
+    // "No winner row for THIS user" is ambiguous on its own — it's the same whether
+    // selection hasn't run for this prize yet, or it ran and this user simply wasn't
+    // chosen. Check whether ANY winner exists for the prize to tell those apart, so
+    // the frontend can show "winners haven't been announced yet" instead of a
+    // misleading "you didn't win" before selection has even happened.
+    const winnersFinalized = (await GiveawayWinner.count({ where: { prizeId } })) > 0;
+    return { isWinner: false, winner: null, claim: null, winnersFinalized };
+  }
 
   const claim = await PrizeClaim.findOne({ where: { winnerId: winner.id } });
-  return { isWinner: true, winner, claim };
+  return { isWinner: true, winner, claim, winnersFinalized: true };
 }
 
 /**

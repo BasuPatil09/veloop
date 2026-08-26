@@ -7,6 +7,7 @@ const getMyClaim = asyncHandler(async (req, res) => {
   const result = await claimService.getMyClaim(req.user.id, req.params.prizeId);
   return ok(res, {
     isWinner: result.isWinner,
+    winnersFinalized: result.winnersFinalized,
     winner: result.winner
       ? { status: result.winner.status, claimDeadline: result.winner.claimDeadline, selectedAt: result.winner.selectedAt }
       : null,

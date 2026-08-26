@@ -6,6 +6,7 @@ import { useAuth } from './useAuth';
 export function useClaim(prizeId) {
   const { isAuthenticated } = useAuth();
   const [isWinner, setIsWinner] = useState(false);
+  const [winnersFinalized, setWinnersFinalized] = useState(false);
   const [winner, setWinner] = useState(null);
   const [claim, setClaim] = useState(null);
   const [isFetching, setIsFetching] = useState(true);
@@ -24,6 +25,7 @@ export function useClaim(prizeId) {
       .then((data) => {
         if (cancelled) return;
         setIsWinner(data.isWinner);
+        setWinnersFinalized(Boolean(data.winnersFinalized));
         setWinner(data.winner);
         setClaim(data.claim);
       })
@@ -57,5 +59,5 @@ export function useClaim(prizeId) {
     [prizeId],
   );
 
-  return { isWinner, winner, claim, isLoading, submitClaim, isSubmitting, submitError };
+  return { isWinner, winnersFinalized, winner, claim, isLoading, submitClaim, isSubmitting, submitError };
 }
