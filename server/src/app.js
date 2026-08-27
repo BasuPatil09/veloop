@@ -15,6 +15,7 @@ const participationRoutes = require('./routes/participationRoutes');
 const winnerRoutes = require('./routes/winnerRoutes');
 const claimRoutes = require('./routes/claimRoutes');
 const adminRoutes = require('./routes/adminRoutes');
+const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
@@ -38,6 +39,7 @@ app.use('/api/giveaways', participationRoutes);
 app.use('/api/giveaways', winnerRoutes);
 app.use('/api/giveaways', claimRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/users', userRoutes);
 
 app.use(notFoundHandler);
 app.use(errorHandler);

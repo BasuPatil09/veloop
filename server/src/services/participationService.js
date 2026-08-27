@@ -1,3 +1,4 @@
+const { Op } = require('sequelize');
 const {
   sequelize,
   User,
@@ -5,6 +6,7 @@ const {
   Prize,
   GiveawayParticipation,
   GiveawayEntryTransaction,
+  GiveawayWinner,
   FraudEvent,
 } = require('../models');
 const giveawayService = require('./giveawayService');
@@ -17,6 +19,33 @@ const { ApiError, ErrorCodes } = require('../utils/errorCodes');
 async function getMyStatus(userId, prizeId) {
   const participation = await GiveawayParticipation.findOne({ where: { userId, prizeId } });
   return { joined: Boolean(participation), participation };
+}
+
+/**
+ * Full participation history for "My Entries" — every prize this user has ever
+ * joined, with the prize/giveaway context and win status inline. Winner rows are
+ * batch-fetched (one extra query) rather than per-row, to avoid N+1 queries.
+ */
+async function getMyParticipations(userId) {
+  const participations = await GiveawayParticipation.findAll({
+    where: { userId },
+    include: [
+      { model: Prize, as: 'prize' },
+      { model: Giveaway, as: 'giveaway' },
+    ],
+    order: [['joinedAt', 'DESC']],
+  });
+
+  if (participations.length === 0) return [];
+
+  const prizeIds = participations.map((p) => p.prizeId);
+  const winners = await GiveawayWinner.findAll({ where: { userId, prizeId: { [Op.in]: prizeIds } } });
+  const winnerByPrizeId = new Map(winners.map((w) => [w.prizeId, w]));
+
+  return participations.map((participation) => ({
+    participation,
+    winner: winnerByPrizeId.get(participation.prizeId) || null,
+  }));
 }
 
 /**
@@ -178,4 +207,4 @@ async function join(userId, prizeId, { idempotencyKey, deviceHash, ipHash } = {}
   }
 }
 
-module.exports = { getMyStatus, join };
+module.exports = { getMyStatus, getMyParticipations, join };

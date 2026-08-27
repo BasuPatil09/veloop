@@ -35,10 +35,12 @@ async function createAdmin() {
   return { admin, token: signAccessToken(admin) };
 }
 
+let userCounter = 0;
 async function createUser(balances = {}) {
+  userCounter += 1;
   const user = await User.create({
-    name: 'Player One',
-    email: 'player@example.com',
+    name: `Player ${userCounter}`,
+    email: `player${userCounter}@example.com`,
     passwordHash: 'x',
     role: 'user',
     balanceVe: balances.ve ?? 0,
@@ -249,5 +251,50 @@ describe('GET /api/giveaways/:prizeId/my-status', () => {
     const giveaway = await createGiveawayWithPrize();
     const res = await request(app).get(`/api/giveaways/${giveaway.prizes[0].id}/my-status`);
     expect(res.status).toBe(401);
+  });
+});
+
+describe('GET /api/users/me/participations', () => {
+  it('rejects an unauthenticated request', async () => {
+    const res = await request(app).get('/api/users/me/participations');
+    expect(res.status).toBe(401);
+  });
+
+  it('returns an empty list for a user who has never joined anything', async () => {
+    const { token } = await createUser({ ve: 850 });
+    const res = await request(app).get('/api/users/me/participations').set('Authorization', `Bearer ${token}`);
+
+    expect(res.status).toBe(200);
+    expect(res.body.data.participations).toEqual([]);
+  });
+
+  it('returns the full entry history with prize/giveaway context, most recent first', async () => {
+    const giveaway = await createGiveawayWithPrize();
+    const { token } = await createUser({ ve: 850 });
+
+    await request(app).post(`/api/giveaways/${giveaway.prizes[0].id}/join`).set('Authorization', `Bearer ${token}`).send({});
+
+    const res = await request(app).get('/api/users/me/participations').set('Authorization', `Bearer ${token}`);
+    expect(res.status).toBe(200);
+    expect(res.body.data.participations).toHaveLength(1);
+
+    const entry = res.body.data.participations[0];
+    expect(entry.entryAmount).toBe(250);
+    expect(entry.entryCurrency).toBe('VE');
+    expect(entry.prize.name).toBe('iPhone 15 Pro');
+    expect(entry.giveaway.title).toBe('Test Giveaway');
+    expect(entry.isWinner).toBe(false);
+    expect(entry.winnerStatus).toBeNull();
+  });
+
+  it('only ever returns the requesting user\u2019s own entries, never another user\u2019s', async () => {
+    const giveaway = await createGiveawayWithPrize();
+    const { token: userAToken } = await createUser({ ve: 850 });
+    await request(app).post(`/api/giveaways/${giveaway.prizes[0].id}/join`).set('Authorization', `Bearer ${userAToken}`).send({});
+
+    const { token: userBToken } = await createUser({ ve: 850 });
+
+    const res = await request(app).get('/api/users/me/participations').set('Authorization', `Bearer ${userBToken}`);
+    expect(res.body.data.participations).toEqual([]);
   });
 });

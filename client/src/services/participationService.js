@@ -10,4 +10,9 @@ async function join(prizeId, idempotencyKey) {
   return res.data.data;
 }
 
-export const participationService = { getMyStatus, join };
+async function getMyParticipations() {
+  const res = await apiClient.get('/users/me/participations');
+  return res.data.data.participations;
+}
+
+export const participationService = { getMyStatus, join, getMyParticipations };
