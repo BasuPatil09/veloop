@@ -6,6 +6,10 @@ const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
   port: env.db.port,
   dialect: 'mysql',
   logging: false,
+  // Managed MySQL hosts (Aiven, PlanetScale, etc.) require TLS and reject plain
+  // connections outright. Local MySQL/MariaDB doesn't need this, so it's opt-in
+  // via DB_SSL rather than always-on.
+  dialectOptions: env.db.ssl ? { ssl: { rejectUnauthorized: true } } : {},
   define: {
     // Sequelize default is snake_case table names off / camelCase columns on — we keep
     // camelCase columns to match the JS models 1:1, same convention the Mongoose schemas used.
