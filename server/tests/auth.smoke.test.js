@@ -67,3 +67,14 @@ describe('unknown routes', () => {
     expect(res.body.error.code).toBe('NOT_FOUND');
   });
 });
+
+describe('trust proxy', () => {
+  it('is configured, so req.ip resolves from X-Forwarded-For behind a reverse proxy (Vercel/Render) instead of the proxy\u2019s own address', () => {
+    expect(app.get('trust proxy')).toBe(1);
+  });
+
+  it('accepts requests carrying a forwarded-for header without erroring (express-rate-limit validates this strictly when a proxy is present)', async () => {
+    const res = await request(app).get('/api/health').set('X-Forwarded-For', '203.0.113.42');
+    expect(res.status).toBe(200);
+  });
+});

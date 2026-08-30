@@ -20,20 +20,35 @@ function computeEffectiveStatus(giveaway) {
   return 'ended';
 }
 
+/**
+ * IMPORTANT: list queries filter by TIME directly (startAt/endAt vs. now), not by
+ * the stored `status` column. The stored column is kept fresh by a periodic sweep
+ * (jobs/giveawayStatusSweep.js locally, or a scheduled endpoint on serverless
+ * platforms where an in-process cron can't run) — but that sweep's frequency
+ * varies by deployment platform (every 60s locally/Render, as infrequently as
+ * once a day on some serverless free tiers). Filtering by time directly means
+ * these lists are always correct regardless of how stale the stored column is;
+ * the sweep becomes a nice-to-have for other consumers (e.g. admin dashboards
+ * that query the raw column), never a correctness dependency.
+ */
 async function listCurrent() {
+  const now = new Date();
   return Giveaway.findAll({
-    where: { status: { [Op.in]: ['active', 'upcoming'] } },
+    where: {
+      status: { [Op.ne]: 'archived' },
+      endAt: { [Op.gt]: now }, // hasn't ended yet — covers both upcoming and active
+    },
     include: [PRIZE_INCLUDE],
-    order: [
-      ['status', 'ASC'], // 'active' sorts before 'upcoming' alphabetically — active campaigns lead
-      ['startAt', 'ASC'],
-    ],
+    order: [['startAt', 'ASC']],
   });
 }
 
 async function listPrevious() {
+  const now = new Date();
   return Giveaway.findAll({
-    where: { status: { [Op.in]: ['ended', 'archived'] } },
+    where: {
+      [Op.or]: [{ status: 'archived' }, { endAt: { [Op.lte]: now } }],
+    },
     include: [PRIZE_INCLUDE],
     order: [['endAt', 'DESC']],
   });
@@ -59,9 +74,13 @@ async function getByPrizeSlug(slug) {
 }
 
 async function getStats() {
+  const now = new Date();
   const [totalGiveaways, activeGiveaways] = await Promise.all([
     Giveaway.count(),
-    Giveaway.count({ where: { status: 'active' } }),
+    // Time-based, same reasoning as listCurrent/listPrevious above — never stale.
+    Giveaway.count({
+      where: { status: { [Op.ne]: 'archived' }, startAt: { [Op.lte]: now }, endAt: { [Op.gt]: now } },
+    }),
   ]);
 
   return {
@@ -76,10 +95,11 @@ async function getStats() {
 }
 
 /**
- * Re-derives every non-archived giveaway's status and persists any drift. Called by
- * the cron sweep (jobs/giveawayStatusSweep.js) and safe to call on demand — this is a
- * consistency sweep, not the sole source of truth (every read/write path independently
- * re-checks time bounds too; see architecture doc, section H).
+ * Re-derives every non-archived giveaway's status and persists any drift. A
+ * convenience/consistency sweep — NOT a correctness dependency, since every list
+ * query and every write-path check re-derives live status independently. Safe to
+ * call on any schedule (every minute via node-cron locally/Render, once a day via
+ * Vercel Cron, or not at all).
  */
 async function syncStatuses() {
   const giveaways = await Giveaway.findAll({ where: { status: { [Op.ne]: 'archived' } } });

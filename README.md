@@ -100,6 +100,10 @@ cd client && npm run build && npm run lint
 
 ## Deployment
 
-See `DEPLOYMENT.md` for the full step-by-step guide: Vercel (frontend) + Render (backend) +
-a managed MySQL host, including the exact environment variables each platform needs and a
-cross-domain cookie configuration detail (`SameSite=None; Secure`) that's easy to miss.
+See `DEPLOYMENT.md` for the full step-by-step guide: **one Vercel project** hosts both the
+frontend and the API as serverless functions, with Aiven providing free MySQL (Vercel has no
+native MySQL). Getting the backend to work correctly as serverless functions required real
+code changes, not just config — see `DEPLOYMENT.md`'s "Why this needed real code changes"
+section for the specifics (cron job replacement, always-live status computation instead of
+relying on a periodic sweep, serverless-sized connection pooling, and a `trust proxy` fix that
+turned out to matter for any reverse-proxy deployment, not just this one).

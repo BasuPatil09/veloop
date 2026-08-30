@@ -1,3 +1,5 @@
+const { computeEffectiveStatus } = require('../services/giveawayService');
+
 function serializePrize(prize) {
   return {
     id: prize.id,
@@ -21,7 +23,12 @@ function serializeGiveaway(giveaway) {
     title: giveaway.title,
     slug: giveaway.slug,
     description: giveaway.description,
-    status: giveaway.status,
+    // Always live-computed, never the possibly-stale stored column directly — the
+    // display is correct even if the consistency-sweep hasn't run recently (see
+    // giveawayService.js for why this matters more on some deploy platforms than
+    // others: Vercel Cron's free-tier minimum interval is once a day, not once a
+    // minute like the in-process cron used locally/on Render).
+    status: computeEffectiveStatus(giveaway),
     startAt: giveaway.startAt,
     endAt: giveaway.endAt,
     bannerImage: giveaway.bannerImage,
@@ -40,7 +47,7 @@ function serializePrizeWithGiveaway(prize, giveaway) {
       title: giveaway.title,
       slug: giveaway.slug,
       description: giveaway.description,
-      status: giveaway.status,
+      status: computeEffectiveStatus(giveaway),
       startAt: giveaway.startAt,
       endAt: giveaway.endAt,
       allowMultipleEntries: giveaway.allowMultipleEntries,

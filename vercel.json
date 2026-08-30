@@ -1,0 +1,29 @@
+{
+  "builds": [
+    {
+      "src": "client/package.json",
+      "use": "@vercel/static-build",
+      "config": { "distDir": "dist" }
+    },
+    {
+      "src": "api/index.js",
+      "use": "@vercel/node"
+    },
+    {
+      "src": "api/cron/status-sweep.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    { "src": "/api/cron/status-sweep", "dest": "api/cron/status-sweep.js" },
+    { "src": "/api/(.*)", "dest": "api/index.js" },
+    { "src": "/(.*\\.[a-zA-Z0-9]+)$", "dest": "client/dist/$1" },
+    { "src": "/(.*)", "dest": "client/dist/index.html" }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/status-sweep",
+      "schedule": "0 3 * * *"
+    }
+  ]
+}

@@ -1,6 +1,14 @@
 const { Sequelize } = require('sequelize');
 const { env } = require('./env');
 
+// Vercel sets this automatically inside every serverless function invocation.
+// A traditional long-running process (local dev, Render) can safely hold a normal
+// pool since there's only ever one process; on serverless, many concurrent
+// function instances can each be holding their own pool simultaneously, so each
+// one needs to stay small or a free-tier DB's total connection limit gets
+// exhausted under real traffic.
+const isServerless = Boolean(process.env.VERCEL);
+
 const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
   host: env.db.host,
   port: env.db.port,
@@ -10,6 +18,9 @@ const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
   // connections outright. Local MySQL/MariaDB doesn't need this, so it's opt-in
   // via DB_SSL rather than always-on.
   dialectOptions: env.db.ssl ? { ssl: { rejectUnauthorized: true } } : {},
+  pool: isServerless
+    ? { max: 2, min: 0, idle: 10000, acquire: 30000 }
+    : { max: 10, min: 0, idle: 10000, acquire: 30000 },
   define: {
     // Sequelize default is snake_case table names off / camelCase columns on — we keep
     // camelCase columns to match the JS models 1:1, same convention the Mongoose schemas used.

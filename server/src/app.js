@@ -19,6 +19,14 @@ const userRoutes = require('./routes/userRoutes');
 
 const app = express();
 
+// Required behind any reverse proxy (Vercel, Render, etc.) — without this, req.ip
+// resolves to the PROXY's IP for every request, not the real client's, which
+// silently breaks IP-keyed rate limiting and makes every user's fraud
+// deviceHash/ipHash identical (see services/fraudService.js, utils/deviceHash.js).
+// Safe in plain local dev too: with no actual proxy in front, Express just falls
+// back to the direct connection's address exactly as before.
+app.set('trust proxy', 1);
+
 app.use(helmet());
 app.use(
   cors({

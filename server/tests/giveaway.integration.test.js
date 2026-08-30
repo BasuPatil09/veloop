@@ -261,3 +261,36 @@ describe('GET /api/giveaways/stats', () => {
     });
   });
 });
+
+describe('Status is computed live, not trusted from a possibly-stale stored column', () => {
+  it('excludes a giveaway from "current" once its endAt has passed, even if the stored status column still says active', async () => {
+    const { token } = await createAdmin();
+    const now = Date.now();
+    const day = 24 * 60 * 60 * 1000;
+
+    const res = await request(app)
+      .post('/api/admin/giveaways')
+      .set('Authorization', `Bearer ${token}`)
+      .send(payload({ slug: 'stale-status-giveaway' }));
+    const giveawayId = res.body.data.giveaway.id;
+
+    // Simulate a cron sweep that hasn't run yet: force endAt into the past while
+    // leaving the stored `status` column at 'active' — this is exactly the drift
+    // that would occur on a platform where the sweep only runs once a day.
+    await Giveaway.update(
+      { endAt: new Date(now - day) },
+      { where: { id: giveawayId } },
+    );
+    const staleRow = await Giveaway.findByPk(giveawayId);
+    expect(staleRow.status).toBe('active'); // confirms the stored column really is stale
+
+    const current = await request(app).get('/api/giveaways/current');
+    expect(current.body.data.giveaways.map((g) => g.id)).not.toContain(giveawayId);
+
+    const previous = await request(app).get('/api/giveaways/previous');
+    expect(previous.body.data.giveaways.map((g) => g.id)).toContain(giveawayId);
+
+    const detail = await request(app).get(`/api/giveaways/${giveawayId}`);
+    expect(detail.body.data.giveaway.status).toBe('ended'); // live-computed, not the stale 'active'
+  });
+});
