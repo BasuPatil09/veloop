@@ -14,10 +14,13 @@ const sequelize = new Sequelize(env.db.name, env.db.user, env.db.password, {
   port: env.db.port,
   dialect: 'mysql',
   logging: false,
-  // Managed MySQL hosts (Aiven, PlanetScale, etc.) require TLS and reject plain
-  // connections outright. Local MySQL/MariaDB doesn't need this, so it's opt-in
-  // via DB_SSL rather than always-on.
-  dialectOptions: env.db.ssl ? { ssl: { rejectUnauthorized: true } } : {},
+  // Managed MySQL hosts (TiDB Cloud, Aiven, PlanetScale, etc.) require TLS and
+  // reject plain connections outright. Local MySQL/MariaDB doesn't need this, so
+  // it's opt-in via DB_SSL rather than always-on. DB_SSL_CA is a further optional
+  // layer for providers that specifically require pinning their own CA cert.
+  dialectOptions: env.db.ssl
+    ? { ssl: env.db.sslCa ? { rejectUnauthorized: true, ca: env.db.sslCa } : { rejectUnauthorized: true } }
+    : {},
   pool: isServerless
     ? { max: 2, min: 0, idle: 10000, acquire: 30000 }
     : { max: 10, min: 0, idle: 10000, acquire: 30000 },

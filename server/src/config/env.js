@@ -32,6 +32,11 @@ const env = {
     user: process.env.DB_USER,
     password: process.env.DB_PASSWORD || '',
     ssl: process.env.DB_SSL === 'true',
+    // Optional — most managed MySQL hosts (including TiDB Cloud, which uses a
+    // Let's Encrypt-issued cert already trusted by Node's default CA bundle) work
+    // fine without this. Set it only if a provider specifically requires pinning
+    // their own CA certificate (paste the full PEM contents as the env var value).
+    sslCa: process.env.DB_SSL_CA || null,
   },
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '15m',

@@ -4,11 +4,16 @@ I can't create accounts or deploy on your behalf — this is a copy-pasteable wa
 **Primary path below: everything on one Vercel project** (frontend + API, one URL, one
 dashboard). A database still has to live somewhere else — Vercel has no MySQL offering at
 all (its native databases are Postgres and Redis) — so an external MySQL host is the one
-piece that can't be avoided. Verified current as of August 2026: PlanetScale killed its free
-tier in 2024, Railway is trial-credit-only now, Aiven's free MySQL tier exists but wasn't
-available for this account/region, and Oracle Cloud's Always Free MySQL requires manual VCN
-networking config to be reachable from outside Oracle at all — **db4free.net** below
-sidesteps all three problems.
+piece that can't be avoided. Verified current as of September 2026: PlanetScale killed its
+free tier in 2024, Railway is trial-credit-only now, Aiven's free MySQL tier exists but
+wasn't available for this account/region, Oracle Cloud's Always Free MySQL requires manual
+VCN networking config to be reachable from outside Oracle at all, and db4free.net — a small
+hobbyist site — turned out to no longer be what it used to be by the time this was tried.
+**TiDB Cloud** is the option that held up: a real company (PingCAP) behind it, a genuinely
+generous free tier, and MySQL-wire-protocol compatible so nothing else in this codebase needs
+to change. If it doesn't work out either, **Railway** (confirmed real and currently active,
+$5 one-time trial credit, no card required to start) is the documented fallback — see the end
+of this section.
 
 ## Why this needed real code changes, not just config
 
@@ -36,26 +41,30 @@ or otherwise): `app.set('trust proxy', 1)` was missing entirely. Without it, `re
 rate limiting and the fraud service's device/IP signals both depend on — resolves to the
 *proxy's* address for every request, not the real client's.
 
-## 1. Database — db4free.net (free MySQL, no networking setup)
+## 1. Database — TiDB Cloud (free MySQL-compatible)
 
-Tried first: **Aiven** (regional free-tier availability turned out to be inconsistent — not
-available for this account) and **Oracle Cloud Always Free** (does include MySQL, but Oracle
-defaults it to a *private* network — reaching it from Vercel means manually configuring OCI's
-VCN/subnet/security-list rules, a genuinely fiddly step). db4free.net avoids both problems: no
-card, no networking config, reachable from any IP out of the box — important since Vercel's
-serverless functions don't have a fixed IP to whitelist.
+1. Go to [tidbcloud.com](https://tidbcloud.com) → sign up.
+2. Create a cluster → choose **Starter** (their free consumption-based tier — you may see it
+   labeled "Serverless" in some places, same thing under a renamed tier). Pick any AWS region.
+   Provisioning is typically near-instant for this tier.
+3. Open the cluster → **Connect**. This is where the exact connection details are shown —
+   copy them directly rather than guessing:
+   - **Host**: a long AWS-style hostname (e.g. `gateway01.us-east-1.prod.aws.tidbcloud.com`)
+   - **Port**: **4000** — not MySQL's usual 3306, easy to miss
+   - **User**: often a compound value like `xxxxxxxx.root`, not just `root` — copy it exactly
+   - **Password**: set one when prompted, or use the one shown
+   - **Database name**: use whatever default is offered, or create one (e.g. `veloop`)
+4. TLS is required. Set `DB_SSL=true`. You should **not** need `DB_SSL_CA` — TiDB Cloud's
+   Serverless/Starter tier uses a Let's Encrypt-issued certificate, which is already in
+   Node's default trusted certificate list. If the connection fails specifically with a TLS/
+   certificate error (not a different error), that's the first thing to revisit.
 
-**The honest trade-off:** it's explicitly a *testing* service, not production-grade —
-occasional outages, storage capped around 100–200MB. For a demo with a handful of users and
-giveaways, that's a fine trade for zero setup friction.
-
-1. Go to [db4free.net](https://www.db4free.net) → **Sign up** → pick a database name,
-   username, and password (write these down — they *are* your credentials, there's no
-   separate dashboard to look them up later) → submit → confirm via the email they send.
-2. Once confirmed, your connection details are: **Host** `db4free.net`, **Port** `3306`,
-   **Database name** / **User** / **Password** = whatever you chose in step 1.
-3. No SSL needed here — set `DB_SSL=false` for this database (unlike Aiven, which would have
-   required `DB_SSL=true`).
+**If TiDB Cloud doesn't work out:** [railway.app](https://railway.app) → sign up (no card for
+the trial) → New Project → Provision MySQL. Railway gives standard connection details (host,
+port — the normal 3306 this time, user, password, database) directly on the service's
+"Connect" tab, no SSL required. The trial's one-time $5 credit should comfortably cover a
+database this small for weeks to months; past that, Railway's minimum paid tier is about
+$5/month.
 
 ## 2. Push to GitHub
 
@@ -78,10 +87,10 @@ git push -u origin main
    | Variable | Value |
    |---|---|
    | `NODE_ENV` | `development` for the very first deploy only (see step 4), then `production` |
-   | `DB_HOST` | `db4free.net` |
-   | `DB_PORT` | `3306` |
-   | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | whatever you chose during db4free.net signup |
-   | `DB_SSL` | `false` |
+   | `DB_HOST` | your TiDB Cloud host (or Railway's, if using the fallback) |
+   | `DB_PORT` | `4000` for TiDB Cloud, `3306` for Railway |
+   | `DB_NAME` / `DB_USER` / `DB_PASSWORD` | from your database's Connect panel |
+   | `DB_SSL` | `true` for TiDB Cloud, `false` for Railway |
    | `JWT_SECRET` / `REFRESH_SECRET` / `COOKIE_SECRET` | generate fresh, e.g. `openssl rand -base64 48` |
    | `CLIENT_URL` | your Vercel URL once you know it (e.g. `https://veloop.vercel.app`, no trailing slash) — safe to leave blank for the very first deploy and fill in right after |
    | `CRON_SECRET` | generate fresh — Vercel automatically sends this as a bearer token when it invokes your cron job, and `api/cron/status-sweep.js` checks it |
@@ -91,13 +100,13 @@ git push -u origin main
 4. Deploy. **First-deploy schema creation:** production never auto-syncs the DB schema (see
    `server/src/config/db.js`) — that's true on every platform, not just Vercel. With
    `NODE_ENV=development` set for this first deploy, the app will create all the tables
-   against your db4free.net database on startup. Once you've confirmed it worked (see step 5),
-   change `NODE_ENV` to `production` in the environment variables and redeploy.
+   against your database on startup. Once you've confirmed it worked (see step 5), change
+   `NODE_ENV` to `production` in the environment variables and redeploy.
 5. Confirm `https://<your-vercel-url>/api/health` returns `{"success":true,...}`.
 6. Now that you know the real URL, set `CLIENT_URL` to it exactly and redeploy.
-7. Seed demo data — from your own machine, point a temporary local `.env` at the db4free.net
-   credentials (with `DB_SSL=false`) and run `npm run seed` from inside `server/`. **Change
-   the seeded admin password before leaving this live.**
+7. Seed demo data — from your own machine, point a temporary local `.env` at your database's
+   credentials (matching `DB_SSL`/`DB_PORT` above) and run `npm run seed` from inside
+   `server/`. **Change the seeded admin password before leaving this live.**
 
 ## 4. Verify
 
@@ -124,9 +133,11 @@ write that version of the guide.
 - `sequelize.sync({ alter: true })` doesn't run in production on any platform — see step 4
   above for the one-time workaround; proper `sequelize-cli` migrations are the right
   long-term fix.
-- db4free.net is explicitly a testing service — expect occasional downtime, and storage is
-  capped around 100–200MB. Fine for a demo; not something to leave real users on long-term.
+- TiDB Cloud's free Starter tier has real usage caps (row storage, request units) — generous
+  for a demo, but worth knowing they exist if this ever needs to handle real traffic.
 - The daily cron minimum is a Hobby-plan restriction — a paid Vercel plan allows more
   frequent schedules, not that it matters much anymore given the live-status fix above.
 - Free-tier pricing/availability changes over time — everything above was verified in
-  August 2026.
+  September 2026, and multiple earlier recommendations in this guide's history (PlanetScale,
+  Aiven, db4free.net) turned out not to work by the time they were actually tried — worth
+  re-verifying anything here that's more than a few months old.
